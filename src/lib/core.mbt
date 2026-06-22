@@ -148,7 +148,14 @@ pub fn show_policy(state : PolicyState) -> String {
   r
 }
 
-// Accessor for demo scenarios
+// Setters for CLI commands
+pub fn set_preset(state : PolicyState, name : String) -> Unit { state.preset_name = name }
+pub fn bl_add_domain(state : PolicyState, domain : String, reason : String) -> Unit { state.blacklist_domains.set(domain, reason) }
+pub fn wl_add_domain(state : PolicyState, domain : String, reason : String) -> Unit { state.whitelist_domains.set(domain, reason) }
+pub fn bl_add_tool(state : PolicyState, tool_id : String, reason : String) -> Unit { state.blacklist_tools.set(tool_id, reason) }
+pub fn bl_add_path(state : PolicyState, path : String, reason : String) -> Unit { state.blacklist_paths.set(path, reason) }
+
+// Accessors for demo scenarios
 pub fn get_blacklist_domains(state : PolicyState) -> @hashmap.HashMap[String, String] { state.blacklist_domains }
 pub fn get_blacklist_paths(state : PolicyState) -> @hashmap.HashMap[String, String] { state.blacklist_paths }
 pub fn get_blacklist_tools(state : PolicyState) -> @hashmap.HashMap[String, String] { state.blacklist_tools }

@@ -1,44 +1,29 @@
-// AegisRun Lite — Main Entry (路由)
-// 只负责: 创建引擎 → 读环境变量 → 路由到对应 demo
+// AegisRun Lite — Main Entry
 fn main {
-  println("")
-  println("  ╔══════════════════════════════════════════════════════╗")
-  println("  ║   AegisRun Lite v0.1.0                              ║")
-  println("  ║   AI Agent Secure Tool Execution Framework          ║")
-  println("  ║   MoonBit + WebAssembly  .  OSC2026                 ║")
-  println("  ╚══════════════════════════════════════════════════════╝")
-
+  let args = @env.args()
   let policy = @lib.new_policy_engine()
 
-  let demo_choice = match @env.get_env_var("AEGISRUN_DEMO") {
+  // Check env var for demo mode (set by run_demo.bat)
+  let demo_env = match @env.get_env_var("AEGISRUN_DEMO") {
     Some(v) => v
-    None => "all"
-  }
-  println("  [ENV] AEGISRUN_DEMO=" + demo_choice)
-  println("")
-
-  match demo_choice {
-    "1" => @demo.demo1()
-    "2" => @demo.demo2(policy)
-    "3" => @demo.demo3(policy)
-    "4" => @demo.demo4(policy)
-    "5" => @demo.demo5(policy)
-    "6" => @demo.demo6()
-    "7" => @demo.demo7(policy)
-    _ => {
-      @demo.demo1()
-      @demo.demo2(policy)
-      @demo.demo3(policy)
-      @demo.demo4(policy)
-      @demo.demo5(policy)
-      @demo.demo6()
-      @demo.demo7(policy)
-    }
+    None => ""
   }
 
-  println("")
-  println("  ============================================================")
-  println("   Demo complete. AegisRun Lite — Ready for MCP mode.")
-  println("  ============================================================")
-  println("")
+  print_banner()
+
+  if demo_env != "" {
+    // Demo mode: AEGISRUN_DEMO=n moon run src/main
+    run_demo(demo_env, policy)
+    println("")
+    println("  Demo complete. AegisRun Lite — Ready for MCP mode.")
+  } else if args.length() > 1 {
+    // CLI mode: aegisrun <command> [args...]
+    handle_command(args, policy)
+  } else {
+    // No args: help + run all demos
+    print_help()
+    println("")
+    println("  No command given — running ALL demos as default...")
+    run_demo("all", policy)
+  }
 }
