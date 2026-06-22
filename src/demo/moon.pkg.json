@@ -1,0 +1,6 @@
+{
+  "import": [
+    "aegisrun/lib",
+    "moonbitlang/core/hashmap"
+  ]
+}

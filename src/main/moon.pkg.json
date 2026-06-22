@@ -1,7 +1,8 @@
 {
   "is-main": true,
   "import": [
-    "moonbitlang/core/hashmap",
+    "aegisrun/lib",
+    "aegisrun/demo",
     "moonbitlang/core/env"
   ]
 }
