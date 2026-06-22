@@ -1,0 +1,54 @@
+# ================================================
+# AegisRun — Example Policy Configuration
+# Copy this to policy.yaml and customize
+# ================================================
+
+# ── Blacklist: ALWAYS blocked, highest priority ──
+blacklist:
+  network:
+    domains:
+      - "192.168.*"
+      - "10.*"
+      - "172.16.*"
+  filesystem:
+    paths:
+      - "/etc/passwd"
+      - "/etc/shadow"
+      - "~/.ssh/*"
+      - "~/.aws/*"
+      - "C:\\Windows\\*"
+  env_vars:
+    - "AWS_SECRET_ACCESS_KEY"
+    - "OPENAI_API_KEY"
+    - "ANTHROPIC_API_KEY"
+    - "DATABASE_URL"
+  tool_ids: []
+
+# ── Whitelist: bypass further checks ──
+whitelist:
+  network:
+    domains:
+      - "api.github.com"
+      - "wttr.in"
+  filesystem:
+    paths:
+      - "/tmp/aegisrun/"
+  tool_ids: []
+  authors: []
+
+# ── Defaults: applied when no rule matches ──
+defaults:
+  auto_grant:
+    timeout_ms: 30000
+    memory_kb: 262144
+  require_manual_approval:
+    - filesystem
+    - sql
+
+# ── Concurrency: resource protection ──
+concurrency:
+  max_total_calls: 100
+  max_per_tool: 10
+  max_per_session: 5
+  queue_size: 200
+  queue_timeout_ms: 60000

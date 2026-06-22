@@ -1,0 +1,72 @@
+# ================================================
+# AegisRun — Standard Security Preset (RECOMMENDED)
+# "Common APIs OK, block sensitive"
+# Use for: daily development, trusted tools
+# ================================================
+
+blacklist:
+  network:
+    domains:
+      - "192.168.*"         # Block local network
+      - "10.*"
+      - "172.16.*"
+      - "127.0.0.1"
+      - "localhost"
+      - "*.local"
+  filesystem:
+    paths:
+      - "/etc/passwd"
+      - "/etc/shadow"
+      - "/etc/hosts"
+      - "~/.ssh/*"          # SSH keys
+      - "~/.aws/*"          # AWS credentials
+      - "~/.gnupg/*"        # GPG keys
+      - "~/.config/*"
+      - "C:\\Windows\\*"
+      - "C:\\Program Files\\*"
+      - "C:\\Program Files (x86)\\*"
+  env_vars:
+    - "AWS_SECRET_ACCESS_KEY"
+    - "AWS_ACCESS_KEY_ID"
+    - "OPENAI_API_KEY"
+    - "ANTHROPIC_API_KEY"
+    - "COHERE_API_KEY"
+    - "DATABASE_URL"
+    - "REDIS_URL"
+    - "RABBITMQ_URL"
+    - "GITHUB_TOKEN"
+    - "GITLAB_TOKEN"
+    - "DOCKER_PASSWORD"
+    - "DOCKER_AUTH"
+    - "KUBECONFIG"
+    - "KUBE_CONFIG"
+  tool_ids: []
+
+whitelist:
+  network:
+    domains:
+      - "api.github.com"    # GitHub API
+      - "wttr.in"           # Weather service
+      - "api.openai.com"    # OpenAI API
+      - "api.anthropic.com" # Anthropic API
+  filesystem:
+    paths:
+      - "/tmp/aegisrun/"
+      - "/var/tmp/aegisrun/"
+  tool_ids: []
+  authors: []
+
+defaults:
+  auto_grant:
+    timeout_ms: 30000       # 30 seconds
+    memory_kb: 262144       # 256 MB
+  require_manual_approval:
+    - filesystem            # File access needs approval
+    - sql                   # Database access needs approval
+
+concurrency:
+  max_total_calls: 100
+  max_per_tool: 10
+  max_per_session: 5
+  queue_size: 200
+  queue_timeout_ms: 60000

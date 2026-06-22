@@ -1,0 +1,45 @@
+# ================================================
+# AegisRun — Strict Security Preset
+# "Deny all, approve individually"
+# Use for: production, sensitive data, untrusted tools
+# ================================================
+
+blacklist:
+  network:
+    domains:
+      - "*"                 # Block ALL external network access
+    ips:
+      - "0.0.0.0/0"        # Block ALL IP ranges
+  filesystem:
+    paths:
+      - "/"                 # Block entire filesystem
+      - "~/*"               # Block all user files
+      - "C:\\*"             # Block Windows drives
+  env_vars:
+    - "*"                   # Block ALL environment variables
+  tool_ids: []
+
+whitelist:
+  network:
+    domains: []             # Nothing pre-approved
+  filesystem:
+    paths: []
+  tool_ids: []
+  authors: []
+
+defaults:
+  auto_grant:
+    timeout_ms: 5000        # 5 seconds max
+    memory_kb: 65536        # 64 MB max
+  require_manual_approval:
+    - network
+    - filesystem
+    - env_var
+    - sql
+
+concurrency:
+  max_total_calls: 50
+  max_per_tool: 3
+  max_per_session: 2
+  queue_size: 50
+  queue_timeout_ms: 30000
