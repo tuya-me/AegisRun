@@ -163,10 +163,4 @@ aegisrun/
 ## 相关文档
 
 - [ROADMAP.md](ROADMAP.md) — v1.1 → v2.0 完整路线图
-- [OSC2026 参赛方案](../md/wendang/OSC2026_AI_Agent_参赛方案.md) — 完整设计文档
 
----
-
-## 许可证
-
-Apache 2.0 — 详见 [LICENSE](LICENSE)
