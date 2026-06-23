@@ -2,6 +2,52 @@
 
 ---
 
+## v0.3.0 (2026-06-22) — 沙箱运行时 + DNS 防护
+
+### 新增
+
+**Rust 沙箱运行时 (`runtime/`)**
+- `runtime/src/main.rs` — wasmtime-based 沙箱执行器（210 行），Demo 模式 + WASI 拦截框架
+- `runtime/Cargo.toml` — wasmtime 39 + WASI preview2 依赖
+- `runtime/README.md` — Rust vs C 对比说明 + 用法文档
+- 策略引擎移植到 Rust：`check_domain` / `check_path` / `check_env` 三大检查器
+- 策略文件热加载（YAML/JSON）
+- WASI 拦截点定义：`path_open` / `environ_get` / `sock_send` / `sock_connect`
+
+**DNS 劫持防御 (`src/lib/dns_guard.mbt`)**
+- IP 黑名单引擎：15 条预置规则（RFC1918 / C2 / Tor / 钓鱼 / 链路本地）
+- `check_ip()` — IP 精确匹配 + CIDR 前缀匹配
+- `detect_dns_hijack()` — 域名→IP→黑名单 三级检查
+- `check_hosts_integrity()` — hosts 文件篡改检测（扫描知名域名劫持）
+
+**告警通知 (`src/lib/alert.mbt`)**
+- 三种恢复模式：Auto / Manual / SemiAuto
+- 四级告警：Info / Warning / Critical / Emergency
+
+**终端仪表盘 (`src/lib/dashboard.mbt`)**
+- ASCII 进度条渲染（CPU/MEM/Slot/Queue）
+- Web 面板开关 `toggle_web_panel()`
+
+**恶意脚本生成器 (`src/generator/`)**
+- 12 种攻击类型可选，环境变量控制
+- 拦截演示模式：真实调用 `@lib.check_*` 函数
+
+### 技术决策
+
+| 决策 | 选择 | 原因 |
+|------|:--:|------|
+| 沙箱运行时语言 | **Rust** | wasmtime 生产级 + 内存安全 + WASI Preview 2 |
+| Wasm 运行时 | **wasmtime 39** | Fastly/Shopify 同款，WASI 拦截原生支持 |
+| 策略引擎语言 | **MoonBit**（逻辑）+ **Rust**（执行） | MoonBit 做判断，Rust 做拦截 |
+
+### 安全关键修复
+
+- `check_env` 新增 PASSWORD / CREDENTIAL 关键词
+- `check_domain` 新增 IP 前缀匹配（192.168. / 10. / 172.）
+- 沙箱层接入 IP 黑名单（`sandbox.mbt` 新增 `ip_bl` 字段）
+
+---
+
 ## v0.1.0 (2026-06-22) — 首个版本
 
 ### 新增

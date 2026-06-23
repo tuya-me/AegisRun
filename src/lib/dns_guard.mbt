@@ -8,7 +8,7 @@ pub struct IpBlacklist {
   cidr_prefixes : Array[IpBlockRule]
   suspicious_asn : Array[String]
 }
-pub struct DnsCheckResult {
+pub(all) struct DnsCheckResult {
   domain : String; resolved_ip : String; expected_ip : String
   ip_in_blacklist : Bool; possible_hijack : Bool; hosts_file_tampered : Bool
 }
