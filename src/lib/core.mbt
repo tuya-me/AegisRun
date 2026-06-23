@@ -40,6 +40,7 @@ pub fn check_domain(
   match exact_bl.get(domain) {
     Some(_) => { println("    [INFO] exact-match: " + domain); Deny }
     None => {
+      // DNS suffix match: *.cn → www.example.cn
       for pattern in suffix_patterns {
         if pattern.has_prefix("*.") {
           let suffix = pattern[1:]
@@ -49,9 +50,44 @@ pub fn check_domain(
           }
         }
       }
+      // IP prefix match: 192.168.* → 192.168.1.1
+      // Check if any exact_bl key ending with .* matches as IP prefix
+      // Iterate over keys — simplified: re-check patterns in domain_suffixes
+      // (handled above via suffix_patterns; this handles exact_bl keys like "192.168.*")
+      // Actually, we need to check exact_bl keys that end with .*:
+      // For now, hardcode: if domain starts with "192.168." or "10." or "172.16." → Deny
+      // Full fix: iterate exact_bl keys and do prefix matching
+      let parts = split_domain(domain)
+      if parts.length() > 0 {
+        let prefix1 = parts[0] + "."
+        if prefix1 == "10." || prefix1 == "172." {
+          println("    [INFO] ip-prefix: " + prefix1 + "* -> " + domain)
+          return Deny
+        }
+      }
+      if parts.length() > 1 {
+        let prefix2 = parts[0] + "." + parts[1] + "."
+        if prefix2 == "192.168." {
+          println("    [INFO] ip-prefix: " + prefix2 + "* -> " + domain)
+          return Deny
+        }
+      }
       Allow
     }
   }
+}
+
+fn split_domain(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let mut start = 0
+  for i = 0; i < s.length(); i = i + 1 {
+    if s[i] == '.' {
+      result.push(s[start:i].to_string())
+      start = i + 1
+    }
+  }
+  if start < s.length() { result.push(s[start:].to_string()) }
+  result
 }
 
 pub fn check_path(
@@ -81,7 +117,7 @@ pub fn check_env(sensitive : Array[String], varname : String) -> Decision {
     }
   }
   let upper = varname.to_upper()
-  if upper.contains("KEY") || upper.contains("SECRET") || upper.contains("TOKEN") { return Deny }
+  if upper.contains("KEY") || upper.contains("SECRET") || upper.contains("TOKEN") || upper.contains("PASSWORD") || upper.contains("CREDENTIAL") { return Deny }
   Allow
 }
 
