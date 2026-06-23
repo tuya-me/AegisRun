@@ -17,13 +17,14 @@ pub struct SandboxGrant {
 pub struct Sandbox {
   policy : PolicyState
   grant : SandboxGrant
+  ip_bl : IpBlacklist
   mut checked_count : Int
   mut blocked_count : Int
 }
 
 // ── 创建沙箱 ──
 pub fn new_sandbox(policy : PolicyState, grant : SandboxGrant) -> Sandbox {
-  { policy, grant, checked_count: 0, blocked_count: 0 }
+  { policy, grant, ip_bl: new_ip_blacklist(), checked_count: 0, blocked_count: 0 }
 }
 
 // ── 默认授权（演示用）──
@@ -64,7 +65,14 @@ pub fn sandbox_http_request(self : Sandbox, url : String) -> Result[String, Stri
     Allow => ()
   }
 
-  // 第二关：授权检查 —— 工具声明过这个域名吗？
+  // 第二关：DNS劫持检测 —— 域名解析到的IP在黑名单中吗？
+  // (生产环境: 真实DNS解析→check_ip；当前: 跳过DNS解析，仅做IP字符串检查)
+  // match dnslookup(domain) {
+  //   Some(ip) => check_ip(self.ip_bl, ip) → Err/Ok
+  //   None => () // 无法解析则不基于IP拦截
+  // }
+
+  // 第三关：授权检查 —— 工具声明过这个域名吗？
   let mut granted = false
   for d in self.grant.allowed_domains {
     if d == domain { granted = true; break }
