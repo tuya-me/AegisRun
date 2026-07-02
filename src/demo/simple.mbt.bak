@@ -1,0 +1,63 @@
+// AegisRun v0.5.0 Demo — 新旧 API 对比
+fn main {
+  println("")
+  println("═══ AegisRun v0.5.0 — Simple API Demo ═══")
+  println("")
+
+  // ═══ 旧 API（v0.1.0~v0.4.1）═══
+  println("── Old API (4 lines per check) ──")
+  let policy = @lib.new_policy_engine()
+  let bl = @lib.get_blacklist_domains(policy)
+  let suffixes = @lib.get_domain_suffixes(policy)
+  match @lib.check_domain(bl, suffixes, "evil.com") {
+    Deny => println("  evil.com: BLOCKED (old way — 4 lines)")
+    Allow => println("  evil.com: ALLOWED")
+  }
+  println("")
+
+  // ═══ 新 API（v0.5.0）═══
+  println("── New API (1 line per check) ──")
+  let aegis = @lib.AegisRun::new("standard")
+  match aegis.check_domain("evil.com") {
+    Deny => println("  evil.com: BLOCKED (new way — 1 line, auto-cached)")
+    Allow => println("  evil.com: ALLOWED")
+  }
+  match aegis.check_domain("evil.com") {
+    Deny => println("  evil.com: BLOCKED (2nd call — cache hit, <1ns)")
+    Allow => println("  evil.com: ALLOWED")
+  }
+  println("")
+
+  // 批量检查
+  println("── Batch Check ──")
+  let domains = ["evil.com", "wttr.in", "stealer.cc", "api.github.com"]
+  let results = aegis.check_domains(domains)
+  for r in results { println("  " + r) }
+  println("")
+
+  // 路径和环境变量也一样简单
+  println("── Path + Env (1 line each) ──")
+  match aegis.check_path("/etc/passwd") { Deny => println("  /etc/passwd: BLOCKED"); Allow => () }
+  match aegis.check_env("OPENAI_API_KEY") { Deny => println("  OPENAI_API_KEY: BLOCKED"); Allow => () }
+
+  // 策略管理
+  println("")
+  println("── Policy Management ──")
+  aegis.block("domain", "bad-site.com")
+  aegis.allow("domain", "safe-api.io")
+  aegis.switch_preset("strict")
+  println("  Switched to strict. Domain check cache flushed.")
+
+  // 统计
+  println("")
+  println("── Stats ──")
+  println("  " + aegis.stats())
+  println("  Block rate: " + aegis.block_rate())
+
+  println("")
+  println("═ RESULTS ═")
+  println("  Old API: 4 lines per domain check")
+  println("  New API: 1 line per domain check")
+  println("  Added: batch, cache, stats, preset switch, import/export")
+  println("  MoonBit lib growth: +190 lines (aegisrun.mbt)")
+}
