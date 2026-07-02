@@ -1,0 +1,8 @@
+[package]
+name = "evil-plugin"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "evil-plugin"
+path = "src/main.rs"
