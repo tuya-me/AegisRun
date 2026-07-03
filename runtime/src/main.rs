@@ -11,7 +11,7 @@ mod server;
 mod persist;
 mod verify;
 
-use persist::{AuditLogger, save_policy, load_policy, PolicyWatcher};
+use persist::{AuditLogger, save_policy, load_policy};
 use verify::ToolRegistry;
 
 fn main() {

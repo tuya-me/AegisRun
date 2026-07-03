@@ -115,12 +115,14 @@ pub fn load_policy(path: &str) -> Result<Policy, String> {
 
 use std::time::SystemTime as StdTime;
 
+#[allow(dead_code)] // Public API — called from external consumers
 pub struct PolicyWatcher {
     path: String,
     last_modified: Option<StdTime>,
     callback_count: usize,
 }
 
+#[allow(dead_code)]
 impl PolicyWatcher {
     pub fn new(path: &str) -> Self {
         let lm = Path::new(path).metadata().ok().and_then(|m| m.modified().ok());
@@ -131,7 +133,7 @@ impl PolicyWatcher {
     pub fn check_changed(&mut self) -> bool {
         if let Ok(meta) = fs::metadata(&self.path) {
             if let Ok(mtime) = meta.modified() {
-                let changed = self.last_modified.map_or(true, |lm| mtime > lm);
+                let changed = self.last_modified.is_none_or(|lm| mtime > lm);
                 if changed {
                     self.last_modified = Some(mtime);
                     self.callback_count += 1;

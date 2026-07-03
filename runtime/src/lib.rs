@@ -92,7 +92,7 @@ pub fn sandbox_getenv(policy: &Policy, var: &str) -> Result<String, String> {
     if !policy.check_env(var) {
         return Err(format!("BLOCKED: env '{}' denied by security policy", var));
     }
-    std::env::var(var).map_err(|_| format!("env not set"))
+    std::env::var(var).map_err(|_| "env not set".to_string())
 }
 
 // ═══════════════════════════════════════

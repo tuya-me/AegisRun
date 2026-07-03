@@ -1,0 +1,341 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "aegisrun/lib"
+
+import {
+  "moonbitlang/core/hashmap",
+}
+
+// Values
+pub fn bl_add_domain(PolicyState, String, String) -> Unit
+
+pub fn bl_add_path(PolicyState, String, String) -> Unit
+
+pub fn bl_add_tool(PolicyState, String, String) -> Unit
+
+pub fn check_domain(@hashmap.HashMap[String, String], Array[String], String) -> Decision
+
+pub fn check_env(Array[String], String) -> Decision
+
+pub fn check_hosts_integrity(String) -> Array[String]
+
+pub fn check_ip(IpBlacklist, String) -> Result[Unit, String]
+
+pub fn check_path(@hashmap.HashMap[String, String], Array[String], String) -> Decision
+
+pub fn check_tool_id(@hashmap.HashMap[String, String], String) -> Decision
+
+pub fn default_alert_config() -> AlertConfig
+
+pub fn default_dashboard() -> Dashboard
+
+pub fn default_grant() -> SandboxGrant
+
+pub fn default_limiter() -> ConcurrencyLimiter
+
+pub fn default_monitor() -> PressureMonitor
+
+pub fn detect_dns_hijack(String, String, IpBlacklist, String) -> DnsCheckResult
+
+pub fn format_report(RiskReport) -> String
+
+pub fn get_blacklist_domains(PolicyState) -> @hashmap.HashMap[String, String]
+
+pub fn get_blacklist_paths(PolicyState) -> @hashmap.HashMap[String, String]
+
+pub fn get_blacklist_tools(PolicyState) -> @hashmap.HashMap[String, String]
+
+pub fn get_domain_suffixes(PolicyState) -> Array[String]
+
+pub fn get_path_prefixes(PolicyState) -> Array[String]
+
+pub fn get_sensitive_envs(PolicyState) -> Array[String]
+
+pub fn is_internal_ip(String) -> Bool
+
+pub fn load_policy_patch(PolicyState, String) -> Unit
+
+pub fn load_standard_preset(PolicyState) -> Unit
+
+pub fn make_sql_rule(String, Array[String], Array[String], Int, Bool, Array[String]) -> SqlTableRule
+
+pub fn make_tool(String, String) -> ToolInfo
+
+pub fn new_alert_manager(AlertConfig) -> AlertManager
+
+pub fn new_ip_blacklist() -> IpBlacklist
+
+pub fn new_limiter(LimiterConfig) -> ConcurrencyLimiter
+
+pub fn new_monitor(MonitorConfig) -> PressureMonitor
+
+pub fn new_policy_engine() -> PolicyState
+
+pub fn new_sandbox(PolicyState, SandboxGrant) -> Sandbox
+
+pub fn new_sql_connection(String, String) -> SqlConnection
+
+pub fn score_manifest(String, String, Bool, Array[String], Array[String], Array[String], Array[String], Int, Int) -> RiskReport
+
+pub fn set_preset(PolicyState, String) -> Unit
+
+pub fn show_policy(PolicyState) -> String
+
+pub fn standard_sandbox() -> Sandbox
+
+pub fn tool_desc(ToolInfo) -> String
+
+pub fn tool_id(ToolInfo) -> String
+
+pub fn wl_add_domain(PolicyState, String, String) -> Unit
+
+// Errors
+
+// Types and methods
+pub struct AegisRun {
+  policy : PolicyState
+  ip_bl : IpBlacklist
+  mut domain_cache : @hashmap.HashMap[String, Decision]
+  mut path_cache : @hashmap.HashMap[String, Decision]
+  mut env_cache : @hashmap.HashMap[String, Decision]
+  mut total_checks : Int
+  mut total_blocks : Int
+}
+pub fn AegisRun::allow(Self, String, String) -> Unit
+pub fn AegisRun::block(Self, String, String) -> Unit
+pub fn AegisRun::block_rate(Self) -> String
+pub fn AegisRun::check_domain(Self, String) -> Decision
+pub fn AegisRun::check_domains(Self, Array[String]) -> Array[String]
+pub fn AegisRun::check_env(Self, String) -> Decision
+pub fn AegisRun::check_path(Self, String) -> Decision
+pub fn AegisRun::check_paths(Self, Array[String]) -> Array[String]
+pub fn AegisRun::export_policy(Self) -> String
+pub fn AegisRun::import_from_env(Self) -> Unit
+pub fn AegisRun::new(String) -> Self
+pub fn AegisRun::score_manifest(Self, String, String, Bool, Array[String], Array[String], Array[String], Array[String], Int, Int) -> RiskReport
+pub fn AegisRun::stats(Self) -> String
+pub fn AegisRun::switch_preset(Self, String) -> Unit
+
+pub struct AlertConfig {
+  recovery_mode : RecoveryMode
+  auto_recovery_check_count : Int
+  manual_recovery_url : String
+  webhook_url : String
+  sms_number : String
+  email : String
+  dashboard_refresh_ms : Int
+}
+
+pub enum AlertLevel {
+  Info
+  Warning
+  Critical
+  Emergency
+}
+
+pub struct AlertManager {
+  config : AlertConfig
+  mut alert_count : Int
+  mut emergency_count : Int
+  mut last_alert_level : AlertLevel
+  mut recovery_requested : Bool
+}
+pub fn AlertManager::alert_stats(Self) -> String
+pub fn AlertManager::request_recovery(Self) -> Unit
+pub fn AlertManager::send_alert(Self, AlertLevel, String, String) -> Unit
+pub fn AlertManager::should_recover(Self, MonitorLevel, Int) -> Bool
+
+pub struct ConcurrencyLimiter {
+  config : LimiterConfig
+  mut global_active : Int
+  tool_active : @hashmap.HashMap[String, Int]
+  session_active : @hashmap.HashMap[String, Int]
+  tool_limits : @hashmap.HashMap[String, Int]
+  mut queue_length : Int
+  mut total_allowed : Int
+  mut total_rejected : Int
+}
+pub fn ConcurrencyLimiter::acquire(Self, String, String) -> Result[String, String]
+pub fn ConcurrencyLimiter::limiter_stats(Self) -> String
+pub fn ConcurrencyLimiter::release(Self, String, String) -> Unit
+pub fn ConcurrencyLimiter::set_tool_limit(Self, String, Int) -> Unit
+
+pub struct Dashboard {
+  config : DashboardConfig
+  mut frame_count : Int
+  log_buffer : Array[String]
+}
+pub fn Dashboard::render_terminal(Self, Int, Int, Int, Int, Int, Int, Int, String, Bool) -> String
+pub fn Dashboard::toggle_web_panel(Self) -> Unit
+
+pub struct DashboardConfig {
+  mut web_panel_enabled : Bool
+  web_panel_port : Int
+  refresh_interval_ms : Int
+  max_log_lines : Int
+}
+
+pub enum Decision {
+  Allow
+  Deny
+}
+
+pub struct Deduction {
+  category : String
+  points : Int
+  reason : String
+  severity : String
+}
+
+pub(all) struct DnsCheckResult {
+  domain : String
+  resolved_ip : String
+  expected_ip : String
+  ip_in_blacklist : Bool
+  possible_hijack : Bool
+  hosts_file_tampered : Bool
+}
+
+pub struct IpBlacklist {
+  exact_ips : @hashmap.HashMap[String, String]
+  cidr_prefixes : Array[IpBlockRule]
+  suspicious_asn : Array[String]
+}
+
+pub struct IpBlockRule {
+  prefix : String
+  reason : String
+}
+
+pub struct LimiterConfig {
+  max_total : Int
+  max_per_tool : Int
+  max_per_session : Int
+  queue_size : Int
+  queue_timeout_ms : Int
+}
+
+pub struct MonitorConfig {
+  warning_threshold_pct : Int
+  degraded_threshold_pct : Int
+  critical_threshold_pct : Int
+  sustained_seconds : Int
+  recovery_seconds : Int
+}
+
+pub enum MonitorLevel {
+  Normal
+  Warning
+  Degraded
+  Critical
+} derive(Eq)
+
+pub struct PolicyState {
+  mut preset_name : String
+  blacklist_domains : @hashmap.HashMap[String, String]
+  blacklist_paths : @hashmap.HashMap[String, String]
+  blacklist_tools : @hashmap.HashMap[String, String]
+  whitelist_domains : @hashmap.HashMap[String, String]
+  sensitive_envs : Array[String]
+  mut auto_grant_timeout_ms : Int
+  mut auto_grant_memory_kb : Int
+  mut domain_suffix_patterns : Array[String]
+  path_prefix_patterns : Array[String]
+}
+
+pub struct PressureMonitor {
+  config : MonitorConfig
+  mut cpu_pct : Int
+  mut mem_pct : Int
+  mut instance_count : Int
+  mut queue_depth : Int
+  mut avg_response_ms : Int
+  mut denial_rate_per_min : Int
+  mut current_level : MonitorLevel
+  mut level_duration_sec : Int
+  mut circuit_open : Bool
+  mut total_killed : Int
+}
+pub fn PressureMonitor::get_action(Self) -> String
+pub fn PressureMonitor::get_level(Self) -> MonitorLevel
+pub fn PressureMonitor::is_circuit_open(Self) -> Bool
+pub fn PressureMonitor::kill_tool(Self, String) -> Unit
+pub fn PressureMonitor::level_code(Self) -> Int
+pub fn PressureMonitor::monitor_dashboard(Self) -> String
+pub fn PressureMonitor::simulate_pressure(Self, Int, Int) -> Unit
+pub fn PressureMonitor::update_metrics(Self, Int, Int, Int, Int, Int, Int) -> Unit
+
+pub enum RecoveryMode {
+  Auto
+  Manual
+  SemiAuto
+}
+
+pub enum RiskLevel {
+  Safe
+  Warning
+  Dangerous
+  Critical
+}
+
+pub struct RiskReport {
+  tool_id : String
+  tool_author : String
+  score : Int
+  level : RiskLevel
+  deductions : Array[Deduction]
+  total_checks : Int
+  recommendation : String
+}
+
+pub struct Sandbox {
+  policy : PolicyState
+  grant : SandboxGrant
+  ip_bl : IpBlacklist
+  mut checked_count : Int
+  mut blocked_count : Int
+}
+pub fn Sandbox::sandbox_check_memory(Self, Int) -> Result[Int, String]
+pub fn Sandbox::sandbox_check_timeout(Self, Int) -> Result[Int, String]
+pub fn Sandbox::sandbox_file_open(Self, String) -> Result[String, String]
+pub fn Sandbox::sandbox_getenv(Self, String) -> Result[String, String]
+pub fn Sandbox::sandbox_http_request(Self, String) -> Result[String, String]
+pub fn Sandbox::sandbox_stats(Self) -> String
+
+pub struct SandboxGrant {
+  allowed_domains : Array[String]
+  allowed_paths : Array[String]
+  allowed_env_vars : Array[String]
+  max_timeout_ms : Int
+  max_memory_kb : Int
+  max_file_size_kb : Int
+}
+
+pub struct SqlConnection {
+  db_alias : String
+  real_path : String
+  tables : Array[SqlTableRule]
+  mut query_count : Int
+  mut blocked_count : Int
+}
+pub fn SqlConnection::add_table(Self, SqlTableRule) -> Unit
+pub fn SqlConnection::guard_query(Self, String) -> Result[String, String]
+pub fn SqlConnection::sql_guard_stats(Self) -> String
+
+pub struct SqlTableRule {
+  name : String
+  permissions : Array[String]
+  allowed_columns : Array[String]
+  max_rows : Int
+  require_where : Bool
+  forbidden_ops : Array[String]
+}
+
+pub struct ToolInfo {
+  id : String
+  description : String
+}
+
+// Type aliases
+
+// Traits
+

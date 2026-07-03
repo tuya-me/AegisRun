@@ -13,6 +13,7 @@ pub struct ToolRegistry {
     trusted_publishers: Vec<String>,
 }
 
+#[allow(dead_code)] // Public API — called from external consumers
 impl ToolRegistry {
     pub fn new() -> Self {
         let mut trusted = HashMap::new();

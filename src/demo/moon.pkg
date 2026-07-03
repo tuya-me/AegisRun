@@ -1,0 +1,9 @@
+import {
+  "aegisrun/lib",
+  "moonbitlang/core/hashmap",
+  "moonbitlang/core/env",
+}
+
+options(
+  "is-main": false,
+)

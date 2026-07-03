@@ -3,16 +3,30 @@
 // Depends on: aegisrun/lib (core engine)
 // ────────────────────────────────────────────
 
+///|
 fn hr(title : String) -> Unit {
   println("")
   println("============================================================")
   println("  " + title)
   println("============================================================")
 }
-fn ok(msg : String) -> Unit  { println("    [OK]  " + msg) }
-fn blk(msg : String) -> Unit { println("    [BLOCK] " + msg) }
-fn info(msg : String) -> Unit { println("    [INFO] " + msg) }
 
+///|
+fn ok(msg : String) -> Unit {
+  println("    [OK]  " + msg)
+}
+
+///|
+fn blk(msg : String) -> Unit {
+  println("    [BLOCK] " + msg)
+}
+
+///|
+fn info(msg : String) -> Unit {
+  println("    [INFO] " + msg)
+}
+
+///|
 pub fn demo1() -> Unit {
   hr("Demo 1: Install Third-Party Tool — Permission Review")
   println("  Tool: weather-query v1.2.0")
@@ -27,18 +41,21 @@ pub fn demo1() -> Unit {
   ok("PASS — Risk score: 92/100 — Safe to install")
 }
 
+///|
 pub fn demo2(policy : @lib.PolicyState) -> Unit {
   hr("Demo 2: Malicious Tool — Data Exfiltration Attempts")
   let bl = @lib.get_blacklist_domains(policy)
   let suffixes = @lib.get_domain_suffixes(policy)
   println("  Scenario: weather-query tries to POST data while querying weather")
   println("")
-  let targets : Array[String] = ["wttr.in", "evil.com", "data-stealer.ru", "192.168.1.100"]
+  let targets : Array[String] = [
+    "wttr.in", "evil.com", "data-stealer.ru", "192.168.1.100",
+  ]
   for domain in targets {
     println("  Tool attempts: POST https://" + domain + "/collect")
     match @lib.check_domain(bl, suffixes, domain) {
       Allow => ok(domain + " ALLOWED (declared domain)")
-      Deny  => blk(domain + " DENIED — sandbox blocks before HTTP request")
+      Deny => blk(domain + " DENIED — sandbox blocks before HTTP request")
     }
   }
   println("")
@@ -46,6 +63,7 @@ pub fn demo2(policy : @lib.PolicyState) -> Unit {
   ok("Tool cannot bypass: sandbox checks domain BEFORE sending any packet")
 }
 
+///|
 pub fn demo3(policy : @lib.PolicyState) -> Unit {
   hr("Demo 3: File Reader — Path Access Control")
   let bl = @lib.get_blacklist_paths(policy)
@@ -53,31 +71,34 @@ pub fn demo3(policy : @lib.PolicyState) -> Unit {
   println("  Scenario: log-analyzer tool reads files during analysis")
   println("")
   let files : Array[String] = [
-    "/tmp/logs/access.log", "/etc/passwd", "~/.ssh/id_rsa",
-    "/tmp/logs/error.log", "C:\\Windows\\System32\\config\\SAM",
+    "/tmp/logs/access.log", "/etc/passwd", "~/.ssh/id_rsa", "/tmp/logs/error.log",
+    "C:\\Windows\\System32\\config\\SAM",
   ]
   for f in files {
     println("  Tool: open(" + f + ")")
     match @lib.check_path(bl, prefixes, f) {
       Allow => ok(f + " allowed")
-      Deny  => blk(f + " denied — sensitive path")
+      Deny => blk(f + " denied — sensitive path")
     }
   }
   println("")
   ok("2 legitimate log files accessed, 3 sensitive paths blocked")
 }
 
+///|
 pub fn demo4(policy : @lib.PolicyState) -> Unit {
   hr("Demo 4: Environment Variable Protection")
   let sensitive = @lib.get_sensitive_envs(policy)
   println("  Scenario: code-formatter tool reads env vars at startup")
   println("")
-  let vars : Array[String] = ["LANG", "HOME", "SHELL", "OPENAI_API_KEY", "DATABASE_URL", "GITHUB_TOKEN"]
+  let vars : Array[String] = [
+    "LANG", "HOME", "SHELL", "OPENAI_API_KEY", "DATABASE_URL", "GITHUB_TOKEN",
+  ]
   for v in vars {
     println("  Tool: getenv(" + v + ")")
     match @lib.check_env(sensitive, v) {
       Allow => ok(v + " allowed")
-      Deny  => blk(v + " denied — sensitive/key pattern")
+      Deny => blk(v + " denied — sensitive/key pattern")
     }
   }
   println("")
@@ -85,6 +106,7 @@ pub fn demo4(policy : @lib.PolicyState) -> Unit {
   ok("Even if tool doesn't declare env access, sandbox enforces at OS level")
 }
 
+///|
 pub fn demo5(policy : @lib.PolicyState) -> Unit {
   hr("Demo 5: Runtime Tool Blacklist")
   let bl = @lib.get_blacklist_tools(policy)
@@ -95,7 +117,10 @@ pub fn demo5(policy : @lib.PolicyState) -> Unit {
   ]
   println("  Registered tools:")
   for t in tools {
-    let s = match @lib.check_tool_id(bl, @lib.tool_id(t)) { Allow => "GREEN"; Deny => "RED-BLOCKED" }
+    let s = match @lib.check_tool_id(bl, @lib.tool_id(t)) {
+      Allow => "GREEN"
+      Deny => "RED-BLOCKED"
+    }
     println("    " + s + "  " + @lib.tool_id(t) + " — " + @lib.tool_desc(t))
   }
   println("")
@@ -104,13 +129,17 @@ pub fn demo5(policy : @lib.PolicyState) -> Unit {
   println("")
   println("  After blacklist update:")
   for t in tools {
-    let s = match @lib.check_tool_id(bl, @lib.tool_id(t)) { Allow => "GREEN"; Deny => "RED-BLOCKED" }
+    let s = match @lib.check_tool_id(bl, @lib.tool_id(t)) {
+      Allow => "GREEN"
+      Deny => "RED-BLOCKED"
+    }
     println("    " + s + "  " + @lib.tool_id(t))
   }
   println("")
   ok("weather-query instantly blocked, no restart required")
 }
 
+///|
 pub fn demo6() -> Unit {
   hr("Demo 6: Audit Trail — Every Decision Logged")
   println("  JSONL audit log (aegisrun-audit.jsonl):")
@@ -128,6 +157,7 @@ pub fn demo6() -> Unit {
   ok("Full attack chain traceable via aegisrun audit <tool-id>")
 }
 
+///|
 pub fn demo7(policy : @lib.PolicyState) -> Unit {
   hr("Demo 7: Current Policy + Defense Summary")
   println(@lib.show_policy(policy))

@@ -1,0 +1,9 @@
+import {
+  "aegisrun/lib",
+  "aegisrun/demo",
+  "moonbitlang/core/env",
+}
+
+options(
+  "is-main": true,
+)

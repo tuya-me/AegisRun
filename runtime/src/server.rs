@@ -17,9 +17,8 @@ pub fn run(policy: Policy) {
     println!("╚══════════════════════════════════════════════════════════╝");
     println!();
 
-    for stream in listener.incoming() {
-        if let Ok(mut stream) = stream {
-            let mut buf = [0u8; 8192];
+    for mut stream in listener.incoming().flatten() {
+        let mut buf = [0u8; 8192];
             if stream.read(&mut buf).is_err() { continue; }
 
             let request = String::from_utf8_lossy(&buf);
@@ -61,7 +60,6 @@ pub fn run(policy: Policy) {
                 status, content_type, body.len(), body
             );
             let _ = stream.write_all(response.as_bytes());
-        }
     }
 }
 

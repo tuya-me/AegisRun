@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit toolchain
+        uses: moonbitlang/setup-moonbit@v1
+        with:
+          moon-version: latest
+
+      - name: Module info
+        run: moon info
+
+      - name: Format check
+        run: moon fmt --check
+
+      - name: Compile check (warnings as errors)
+        run: moon check
+
+      - name: Build
+        run: moon build

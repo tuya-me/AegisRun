@@ -7,9 +7,11 @@
 //   moon run src/generator/intercept.mbt
 // ============================================================
 
-fn main {
+///|
+pub fn run_intercept_demo() -> Unit {
   let attacks = match @env.get_env_var("AEGISRUN_ATTACKS") {
-    Some(v) => v; None => "all"
+    Some(v) => v
+    None => "all"
   }
 
   // 加载 AegisRun 引擎
@@ -19,10 +21,11 @@ fn main {
   let env_sensitive = @lib.get_sensitive_envs(policy)
   let suffixes = @lib.get_domain_suffixes(policy)
   let prefixes = @lib.get_path_prefixes(policy)
-  let sb = @lib.standard_sandbox()
+  let _sb = @lib.standard_sandbox()
   let ip_bl = @lib.new_ip_blacklist()
 
-  let mut caught = 0; let mut missed = 0
+  let mut caught = 0
+  let mut missed = 0
 
   println("")
   println("============================================================")
@@ -36,8 +39,14 @@ fn main {
     println("-- Attack 1: evil.com exfiltration --")
     println("  Tool attempts: POST https://evil.com/collect?data=x")
     match @lib.check_domain(domain_bl, suffixes, "evil.com") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] evil.com in blacklist — HTTP request never sent") }
-      Allow => { missed = missed + 1; println("  [MISSED] evil.com was allowed!") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] evil.com in blacklist — HTTP request never sent")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED] evil.com was allowed!")
+      }
     }
     println("")
   }
@@ -47,8 +56,14 @@ fn main {
     println("-- Attack 2: *.cn suffix exfiltration --")
     println("  Tool attempts: POST https://data-harvest.cn/store")
     match @lib.check_domain(domain_bl, suffixes, "data-harvest.cn") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] *.cn suffix matched — sandbox intercept") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] *.cn suffix matched — sandbox intercept")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -58,12 +73,21 @@ fn main {
     println("-- Attack 3: Internal network scan --")
     println("  Tool attempts: GET http://192.168.1.100:8080/admin")
     match @lib.check_domain(domain_bl, suffixes, "192.168.1.100") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] 192.168.* internal network — blocked") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] 192.168.* internal network — blocked")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     match @lib.check_ip(ip_bl, "192.168.1.100") {
-      Err(e) => { caught = caught + 1; println("  [BLOCKED] IP blacklist also: " + e) }
-      Ok(_)  => println("  [INFO] IP check passed (domain already blocked)")
+      Err(e) => {
+        caught = caught + 1
+        println("  [BLOCKED] IP blacklist also: " + e)
+      }
+      Ok(_) => println("  [INFO] IP check passed (domain already blocked)")
     }
     println("")
   }
@@ -73,8 +97,14 @@ fn main {
     println("-- Attack 4: /etc/passwd file theft --")
     println("  Tool attempts: open(/etc/passwd)")
     match @lib.check_path(path_bl, prefixes, "/etc/passwd") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] /etc/passwd in path blacklist — file not opened") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] /etc/passwd in path blacklist — file not opened")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -84,8 +114,14 @@ fn main {
     println("-- Attack 5: SSH key theft --")
     println("  Tool attempts: open(~/.ssh/id_rsa)")
     match @lib.check_path(path_bl, prefixes, "~/.ssh/id_rsa") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] ~/.ssh/ prefix matched — SSH key protected") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] ~/.ssh/ prefix matched — SSH key protected")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -94,9 +130,16 @@ fn main {
   if has_attack(attacks, "6") || attacks == "all" {
     println("-- Attack 6: Windows SAM access --")
     println("  Tool attempts: open(C:\\Windows\\System32\\config\\SAM)")
-    match @lib.check_path(path_bl, prefixes, "C:\\Windows\\System32\\config\\SAM") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] C:\\Windows\\ prefix matched — SAM protected") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+    match
+      @lib.check_path(path_bl, prefixes, "C:\\Windows\\System32\\config\\SAM") {
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] C:\\Windows\\ prefix matched — SAM protected")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -106,8 +149,14 @@ fn main {
     println("-- Attack 7: OpenAI API key theft --")
     println("  Tool attempts: getenv(OPENAI_API_KEY)")
     match @lib.check_env(env_sensitive, "OPENAI_API_KEY") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] API_KEY pattern matched — credential protected") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] API_KEY pattern matched — credential protected")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -117,8 +166,14 @@ fn main {
     println("-- Attack 8: Database credential theft --")
     println("  Tool attempts: getenv(DATABASE_URL)")
     match @lib.check_env(env_sensitive, "DATABASE_URL") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] DATABASE_URL pattern matched") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] DATABASE_URL pattern matched")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -128,8 +183,14 @@ fn main {
     println("-- Attack 9: stealer.cc exfiltration --")
     println("  Tool attempts: POST https://stealer.cc/api/upload")
     match @lib.check_domain(domain_bl, suffixes, "stealer.cc") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] stealer.cc in blacklist") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] stealer.cc in blacklist")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -139,8 +200,14 @@ fn main {
     println("-- Attack 10: Localhost attack --")
     println("  Tool attempts: GET http://localhost:3000/admin")
     match @lib.check_domain(domain_bl, suffixes, "localhost") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] localhost in blacklist — SSRF prevented") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] localhost in blacklist — SSRF prevented")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -150,8 +217,14 @@ fn main {
     println("-- Attack 11: CI token theft --")
     println("  Tool attempts: getenv(GITHUB_TOKEN)")
     match @lib.check_env(env_sensitive, "GITHUB_TOKEN") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] TOKEN keyword detected — CI token protected") }
-      Allow => { missed = missed + 1; println("  [MISSED]") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] TOKEN keyword detected — CI token protected")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED]")
+      }
     }
     println("")
   }
@@ -161,12 +234,24 @@ fn main {
     println("-- Attack 12: AWS credential + exfiltration combo --")
     println("  Tool attempts: open(~/.aws/credentials) then POST evil.com")
     match @lib.check_path(path_bl, prefixes, "~/.aws/credentials") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] ~/.aws/ prefix — credentials protected") }
-      Allow => { missed = missed + 1; println("  [MISSED] ~/.aws/") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] ~/.aws/ prefix — credentials protected")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED] ~/.aws/")
+      }
     }
     match @lib.check_domain(domain_bl, suffixes, "evil.com") {
-      Deny  => { caught = caught + 1; println("  [BLOCKED] evil.com — exfiltration blocked") }
-      Allow => { missed = missed + 1; println("  [MISSED] evil.com") }
+      Deny => {
+        caught = caught + 1
+        println("  [BLOCKED] evil.com — exfiltration blocked")
+      }
+      Allow => {
+        missed = missed + 1
+        println("  [MISSED] evil.com")
+      }
     }
     println("")
   }
@@ -174,7 +259,9 @@ fn main {
   // ═══ Summary ═══
   println("============================================================")
   println("  Interception Results")
-  println("  Caught: " + caught.to_string() + "  |  Missed: " + missed.to_string())
+  println(
+    "  Caught: " + caught.to_string() + "  |  Missed: " + missed.to_string(),
+  )
   if missed == 0 {
     println("  VERDICT: All malicious behaviors intercepted by AegisRun")
   } else {
@@ -186,10 +273,15 @@ fn main {
   let dash = @lib.default_dashboard()
   dash.toggle_web_panel()
   println("")
-  println(dash.render_terminal(45, 62, 67, 100, 12, 200, caught, "Normal", false))
+  println(
+    dash.render_terminal(45, 62, 67, 100, 12, 200, caught, "Normal", false),
+  )
 }
 
+///|
 fn has_attack(selection : String, num : String) -> Bool {
-  if selection == "all" { return false }  // handled by caller
+  if selection == "all" {
+    return false
+  } // handled by caller
   selection.contains(num)
 }

@@ -5,19 +5,35 @@
 // ────────────────────────────────────────────
 
 // ── Types ──
-pub enum Decision { Allow; Deny }
 
+///|
+pub enum Decision {
+  Allow
+  Deny
+}
+
+///|
 pub struct ToolInfo {
   id : String
   description : String
 }
 
+///|
 pub fn make_tool(id : String, description : String) -> ToolInfo {
   { id, description }
 }
-pub fn tool_id(t : ToolInfo) -> String { t.id }
-pub fn tool_desc(t : ToolInfo) -> String { t.description }
 
+///|
+pub fn tool_id(t : ToolInfo) -> String {
+  t.id
+}
+
+///|
+pub fn tool_desc(t : ToolInfo) -> String {
+  t.description
+}
+
+///|
 pub struct PolicyState {
   mut preset_name : String
   blacklist_domains : @hashmap.HashMap[String, String]
@@ -32,13 +48,18 @@ pub struct PolicyState {
 }
 
 // ── Blacklist Engine ──
+
+///|
 pub fn check_domain(
   exact_bl : @hashmap.HashMap[String, String],
   suffix_patterns : Array[String],
   domain : String,
 ) -> Decision {
   match exact_bl.get(domain) {
-    Some(_) => { println("    [INFO] exact-match: " + domain); Deny }
+    Some(_) => {
+      println("    [INFO] exact-match: " + domain)
+      Deny
+    }
     None => {
       // DNS suffix match: *.cn → www.example.cn
       for pattern in suffix_patterns {
@@ -77,26 +98,33 @@ pub fn check_domain(
   }
 }
 
+///|
 fn split_domain(s : String) -> Array[String] {
   let result : Array[String] = []
   let mut start = 0
   for i = 0; i < s.length(); i = i + 1 {
     if s[i] == '.' {
-      result.push(s[start:i].to_string())
+      result.push(s[start:i].to_owned())
       start = i + 1
     }
   }
-  if start < s.length() { result.push(s[start:].to_string()) }
+  if start < s.length() {
+    result.push(s[start:].to_owned())
+  }
   result
 }
 
+///|
 pub fn check_path(
   exact_paths : @hashmap.HashMap[String, String],
   prefix_patterns : Array[String],
   path : String,
 ) -> Decision {
   match exact_paths.get(path) {
-    Some(_) => { println("    [INFO] exact-path: " + path); Deny }
+    Some(_) => {
+      println("    [INFO] exact-path: " + path)
+      Deny
+    }
     None => {
       for blocked in prefix_patterns {
         if path.has_prefix(blocked) {
@@ -109,19 +137,32 @@ pub fn check_path(
   }
 }
 
+///|
 pub fn check_env(sensitive : Array[String], varname : String) -> Decision {
   for pattern in sensitive {
     if varname.contains(pattern) {
-      println("    [INFO] sensitive-pattern: " + pattern + " matches " + varname)
+      println(
+        "    [INFO] sensitive-pattern: " + pattern + " matches " + varname,
+      )
       return Deny
     }
   }
   let upper = varname.to_upper()
-  if upper.contains("KEY") || upper.contains("SECRET") || upper.contains("TOKEN") || upper.contains("PASSWORD") || upper.contains("CREDENTIAL") { return Deny }
+  if upper.contains("KEY") ||
+    upper.contains("SECRET") ||
+    upper.contains("TOKEN") ||
+    upper.contains("PASSWORD") ||
+    upper.contains("CREDENTIAL") {
+    return Deny
+  }
   Allow
 }
 
-pub fn check_tool_id(bl : @hashmap.HashMap[String, String], id : String) -> Decision {
+///|
+pub fn check_tool_id(
+  bl : @hashmap.HashMap[String, String],
+  id : String,
+) -> Decision {
   match bl.get(id) {
     Some(_) => Deny
     None => Allow
@@ -129,55 +170,50 @@ pub fn check_tool_id(bl : @hashmap.HashMap[String, String], id : String) -> Deci
 }
 
 // ── Policy Engine ──
+
+///|
 fn default_blacklist_paths() -> Array[String] {
   // v0.6.0: 从8→30+路径，覆盖 Linux/macOS/Windows 完整凭证目录
   [
     // Linux 系统文件
-    "/etc/passwd", "/etc/shadow", "/etc/ssl/private/",
-    "/var/run/secrets/", "/proc/self/environ",
+    "/etc/passwd", "/etc/shadow", "/etc/ssl/private/", "/var/run/secrets/", "/proc/self/environ",
     "/root/.bash_history", "/var/log/auth.log",
     // 开发者凭证目录
-    "~/.ssh/", "~/.aws/", "~/.gnupg/", "~/.kube/config",
+     "~/.ssh/", "~/.aws/", "~/.gnupg/", "~/.kube/config",
     // macOS 钥匙串和浏览器
-    "~/Library/Keychains/",
-    "~/Library/Application Support/Google/Chrome/",
-    "~/Library/Application Support/Firefox/",
+     "~/Library/Keychains/", "~/Library/Application Support/Google/Chrome/", "~/Library/Application Support/Firefox/",
     // Windows 系统
-    "C:\\Windows\\System32\\config\\",
-    "C:\\Users\\*\\.kube\\config",
-    "C:\\Users\\*\\AppData\\Roaming\\npm\\npmrc",
+     "C:\\Windows\\System32\\config\\", "C:\\Users\\*\\.kube\\config", "C:\\Users\\*\\AppData\\Roaming\\npm\\npmrc",
     "C:\\ProgramData\\Docker\\config.json",
     // 通用高危文件类型
-    ".pem", ".key", ".env", "config.yaml",
+     ".pem", ".key", ".env", "config.yaml",
   ]
 }
 
+///|
 fn default_blacklist_envs() -> Array[String] {
   // v0.6.0: 从8→30+模式，覆盖全部云平台+CI/CD+通信服务
   [
     // AI 服务
-    "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "COHERE_API_KEY",
-    "DEEPSEEK_API_KEY", "GOOGLE_AI_API_KEY",
+    "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "COHERE_API_KEY", "DEEPSEEK_API_KEY",
+    "GOOGLE_AI_API_KEY",
     // 云平台 (AWS/GCP/Azure/阿里/腾讯/华为)
-    "AWS_SECRET", "AWS_ACCESS_KEY", "GCP_", "AZURE_",
-    "ALIBABA_CLOUD", "TENCENT_CLOUD", "HUAWEI_CLOUD",
+     "AWS_SECRET", "AWS_ACCESS_KEY", "GCP_", "AZURE_", "ALIBABA_CLOUD", "TENCENT_CLOUD",
+    "HUAWEI_CLOUD",
     // 数据库和缓存
-    "DATABASE_URL", "REDIS_URL", "MONGODB_URI", "RABBITMQ_URL",
-    "POSTGRES_", "MYSQL_",
+     "DATABASE_URL", "REDIS_URL", "MONGODB_URI", "RABBITMQ_URL", "POSTGRES_", "MYSQL_",
     // CI/CD
-    "GITHUB_TOKEN", "GITLAB_TOKEN", "BITBUCKET_",
-    "CIRCLECI_", "JENKINS_", "TRAVIS_",
+     "GITHUB_TOKEN", "GITLAB_TOKEN", "BITBUCKET_", "CIRCLECI_", "JENKINS_", "TRAVIS_",
     // 通信和支付
-    "SENDGRID_API", "TWILIO_", "STRIPE_",
-    "SLACK_TOKEN", "SLACK_WEBHOOK", "NOTION_TOKEN",
+     "SENDGRID_API", "TWILIO_", "STRIPE_", "SLACK_TOKEN", "SLACK_WEBHOOK", "NOTION_TOKEN",
     // 容器和K8s
-    "DOCKER_PASSWORD", "DOCKER_AUTH", "KUBECONFIG", "KUBE_",
+     "DOCKER_PASSWORD", "DOCKER_AUTH", "KUBECONFIG", "KUBE_",
     // 加密和证书
-    "PRIVATE_KEY", "SSL_KEY", "CERTIFICATE",
-    "PGP_", "GPG_", "NPM_TOKEN", "PYPI_TOKEN",
+     "PRIVATE_KEY", "SSL_KEY", "CERTIFICATE", "PGP_", "GPG_", "NPM_TOKEN", "PYPI_TOKEN",
   ]
 }
 
+///|
 pub fn new_policy_engine() -> PolicyState {
   let state : PolicyState = {
     preset_name: "standard",
@@ -195,6 +231,7 @@ pub fn new_policy_engine() -> PolicyState {
   state
 }
 
+///|
 pub fn load_standard_preset(state : PolicyState) -> Unit {
   state.preset_name = "standard"
   state.blacklist_domains.set("evil.com", "known-malware-c2")
@@ -215,6 +252,7 @@ pub fn load_standard_preset(state : PolicyState) -> Unit {
   state.auto_grant_memory_kb = 262144
 }
 
+///|
 pub fn show_policy(state : PolicyState) -> String {
   let mut r = ""
   r = r + "  Preset: " + state.preset_name
@@ -226,72 +264,156 @@ pub fn show_policy(state : PolicyState) -> String {
 }
 
 // Setters for CLI commands
-pub fn set_preset(state : PolicyState, name : String) -> Unit { state.preset_name = name }
-pub fn bl_add_domain(state : PolicyState, domain : String, reason : String) -> Unit { state.blacklist_domains.set(domain, reason) }
-pub fn wl_add_domain(state : PolicyState, domain : String, reason : String) -> Unit { state.whitelist_domains.set(domain, reason) }
-pub fn bl_add_tool(state : PolicyState, tool_id : String, reason : String) -> Unit { state.blacklist_tools.set(tool_id, reason) }
-pub fn bl_add_path(state : PolicyState, path : String, reason : String) -> Unit { state.blacklist_paths.set(path, reason) }
+
+///|
+pub fn set_preset(state : PolicyState, name : String) -> Unit {
+  state.preset_name = name
+}
+
+///|
+pub fn bl_add_domain(
+  state : PolicyState,
+  domain : String,
+  reason : String,
+) -> Unit {
+  state.blacklist_domains.set(domain, reason)
+}
+
+///|
+pub fn wl_add_domain(
+  state : PolicyState,
+  domain : String,
+  reason : String,
+) -> Unit {
+  state.whitelist_domains.set(domain, reason)
+}
+
+///|
+pub fn bl_add_tool(
+  state : PolicyState,
+  tool_id : String,
+  reason : String,
+) -> Unit {
+  state.blacklist_tools.set(tool_id, reason)
+}
+
+///|
+pub fn bl_add_path(state : PolicyState, path : String, reason : String) -> Unit {
+  state.blacklist_paths.set(path, reason)
+}
 
 // Accessors for demo scenarios
-pub fn get_blacklist_domains(state : PolicyState) -> @hashmap.HashMap[String, String] { state.blacklist_domains }
-pub fn get_blacklist_paths(state : PolicyState) -> @hashmap.HashMap[String, String] { state.blacklist_paths }
-pub fn get_blacklist_tools(state : PolicyState) -> @hashmap.HashMap[String, String] { state.blacklist_tools }
-pub fn get_sensitive_envs(state : PolicyState) -> Array[String] { state.sensitive_envs }
-pub fn get_domain_suffixes(state : PolicyState) -> Array[String] { state.domain_suffix_patterns }
+
+///|
+pub fn get_blacklist_domains(
+  state : PolicyState,
+) -> @hashmap.HashMap[String, String] {
+  state.blacklist_domains
+}
+
+///|
+pub fn get_blacklist_paths(
+  state : PolicyState,
+) -> @hashmap.HashMap[String, String] {
+  state.blacklist_paths
+}
+
+///|
+pub fn get_blacklist_tools(
+  state : PolicyState,
+) -> @hashmap.HashMap[String, String] {
+  state.blacklist_tools
+}
+
+///|
+pub fn get_sensitive_envs(state : PolicyState) -> Array[String] {
+  state.sensitive_envs
+}
+
+///|
+pub fn get_domain_suffixes(state : PolicyState) -> Array[String] {
+  state.domain_suffix_patterns
+}
 
 // ═══════════════════════════════════════════
 // 网页面板同步: 从 key=value1,value2 格式字符串加载策略
 // 网页 dashboard.html 导出 CLI 命令后，通过环境变量传入
 // 用法: set AEGISRUN_POLICY=domain_bl=evil.com,stealer.cc|domain_wl=wttr.in|path_bl=/etc/passwd
 // ═══════════════════════════════════════════
+
+///|
 pub fn load_policy_patch(state : PolicyState, patch_str : String) -> Unit {
   let mut key = ""
   let mut value = ""
   let mut in_value = false
   for i = 0; i < patch_str.length(); i = i + 1 {
-    if patch_str[i] == '=' && !in_value { in_value = true; value = "" }
-    else if patch_str[i] == '|' {
+    if patch_str[i] == '=' && !in_value {
+      in_value = true
+      value = ""
+    } else if patch_str[i] == '|' {
       apply_patch_entry(state, key, value)
-      key = ""; value = ""; in_value = false
+      key = ""
+      value = ""
+      in_value = false
     } else if in_value {
-      value = value + patch_str[i:i+1].to_owned()
+      value = value + patch_str[i:i + 1].to_owned()
     } else {
-      key = key + patch_str[i:i+1].to_owned()
+      key = key + patch_str[i:i + 1].to_owned()
     }
   }
-  if key != "" { apply_patch_entry(state, key, value) }
+  if key != "" {
+    apply_patch_entry(state, key, value)
+  }
   state.preset_name = "custom"
 }
 
+///|
 fn apply_patch_entry(state : PolicyState, key : String, value : String) -> Unit {
   match key {
-    "domain_bl" => {
-      for item in split_csv(value) { state.blacklist_domains.set(item, "web-panel") }
-    }
-    "domain_wl" => {
-      for item in split_csv(value) { state.whitelist_domains.set(item, "web-panel") }
-    }
-    "path_bl" => {
-      for item in split_csv(value) { state.blacklist_paths.set(item, "web-panel"); state.path_prefix_patterns.push(item) }
-    }
-    "env_bl" => {
-      for item in split_csv(value) { state.sensitive_envs.push(item) }
-    }
-    "tool_bl" => {
-      for item in split_csv(value) { state.blacklist_tools.set(item, "web-panel") }
-    }
+    "domain_bl" =>
+      for item in split_csv(value) {
+        state.blacklist_domains.set(item, "web-panel")
+      }
+    "domain_wl" =>
+      for item in split_csv(value) {
+        state.whitelist_domains.set(item, "web-panel")
+      }
+    "path_bl" =>
+      for item in split_csv(value) {
+        state.blacklist_paths.set(item, "web-panel")
+        state.path_prefix_patterns.push(item)
+      }
+    "env_bl" =>
+      for item in split_csv(value) {
+        state.sensitive_envs.push(item)
+      }
+    "tool_bl" =>
+      for item in split_csv(value) {
+        state.blacklist_tools.set(item, "web-panel")
+      }
     _ => ()
   }
 }
 
+///|
 fn split_csv(s : String) -> Array[String] {
   let result : Array[String] = []
   let mut current = ""
   for i = 0; i < s.length(); i = i + 1 {
-    if s[i] == ',' { result.push(current); current = "" }
-    else { current = current + s[i:i+1].to_owned() }
+    if s[i] == ',' {
+      result.push(current)
+      current = ""
+    } else {
+      current = current + s[i:i + 1].to_owned()
+    }
   }
-  if current != "" { result.push(current) }
+  if current != "" {
+    result.push(current)
+  }
   result
 }
-pub fn get_path_prefixes(state : PolicyState) -> Array[String] { state.path_prefix_patterns }
+
+///|
+pub fn get_path_prefixes(state : PolicyState) -> Array[String] {
+  state.path_prefix_patterns
+}
