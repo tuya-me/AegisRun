@@ -190,14 +190,13 @@ aegisrun/
 
 ## 相关文档
 
-- [新手指南](GUIDE.md) — 3 分钟上手 + 常见坑
-- [路线图](ROADMAP.md) — v1.1 → v2.0 完整路线图
-- [更新日志](CHANGELOG.md) — 版本变更记录
-- [架构文档](docs/ARCHITECTURE.md) — 完整调用链 + 数据结构
-- [开发者指南](docs/CONTRIBUTING.md) — 贡献方向 + 代码规范
-- [使用指南](docs/使用指南.md) — 详细调用方式
-- [文档规范](docs/DOCUMENTATION-GUIDE.md) — 文档存放规范
-- [Rust 运行时说明](runtime/README.md)
+- [GUIDE.md](GUIDE.md) — 新手指南（3 分钟上手 + 常见坑）
+- [ROADMAP.md](ROADMAP.md) — 路线图（v1.1 → v2.0）
+- [CHANGELOG.md](CHANGELOG.md) — 更新日志（版本变更记录）
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构文档（完整调用链 + 数据结构）
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — 开发者指南（贡献方向 + 代码规范）
+- [docs/DOCUMENTATION-GUIDE.md](docs/DOCUMENTATION-GUIDE.md) — 文档规范
+- [runtime/README.md](runtime/README.md) — Rust 运行时说明
 
 ---
 
