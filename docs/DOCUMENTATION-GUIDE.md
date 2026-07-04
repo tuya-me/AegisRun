@@ -80,13 +80,16 @@ D:\moonbit\md\
 
 ## 当前文档清单
 
-| 文档 | 位置 | 公开? | 内容 |
-|------|------|:--:|------|
-| README | aegisrun/ | ✅ | 项目说明+快速开始+调用方式 |
-| CHANGELOG | aegisrun/ | ✅ | v0.1.0~v0.2.0 变更 |
-| ROADMAP | aegisrun/ | ✅ | v1.1→v2.0 路线图 |
-| ARCHITECTURE | aegisrun/docs/ | ✅ | 完整调用链+数据结构 |
-| SECURITY-POLICY | aegisrun/docs/ | ✅ | 8 个安全主题详解 |
-| 参赛方案 | md/ | ❌ | OSC2026 参赛方案全文 |
-| 项目申报书 | md/ | ❌ | 附录二格式申报书 |
-| 演示PPT | md/ | ❌ | 12 页演示幻灯片 |
+| 文档 | 位置 | 公开? | 内容 | 最后更新 |
+|------|------|:--:|------|:--:|
+| README | aegisrun/ | ✅ | 项目说明+快速开始+调用方式 | 2026-07-05 |
+| GUIDE | aegisrun/ | ✅ | 新手指南 | ✅ |
+| ROADMAP | aegisrun/ | ✅ | v1.1→v2.0 路线图 | ✅ 已更新 |
+| CHANGELOG | aegisrun/ | ✅ | v0.1.0~v0.5.0 变更 | ✅ 已更新 |
+| ARCHITECTURE | aegisrun/docs/ | ✅ | 完整调用链+数据结构 | ✅ 已更新 |
+| CONTRIBUTING | aegisrun/docs/ | ✅ | 开发者指南+贡献方向 | ✅ 已标注完成项 |
+| 使用指南 | aegisrun/docs/ | ✅ | 详细调用方式 | ✅ |
+| DOCUMENTATION-GUIDE | aegisrun/docs/ | ✅ | 本文档 | ✅ |
+| 参赛方案 | md/ | ❌ | OSC2026 参赛方案全文 | — |
+| 项目申报书 | md/ | ❌ | 附录二格式申报书 | — |
+| 演示PPT | md/ | ❌ | 演示幻灯片 | — |

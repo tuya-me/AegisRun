@@ -4,7 +4,7 @@
 
 [![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260608-blue)](https://moonbitlang.com)
 [![Rust](https://img.shields.io/badge/Rust-wasmtime%2039-orange)](runtime/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue)](LICENSE)
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
 > MoonBit `>= 0.1.20260608` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 39
@@ -203,4 +203,4 @@ aegisrun/
 
 ## 开源许可
 
-MIT License
+Apache License 2.0

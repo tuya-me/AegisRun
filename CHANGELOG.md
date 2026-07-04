@@ -2,6 +2,21 @@
 
 ---
 
+## v0.5.0 (2026-07-05) — 统一门面 + 策略补强 + CI 完善
+
+- 统一门面 `AegisRun::new("standard")`：一行 API 替代旧的四行调用，内置 HashMap 缓存
+- 审计日志 JSONL 持久化（AuditLogger，50条批量刷盘）
+- 策略持久化 + 热加载（save_policy/load_policy + PolicyWatcher 文件监控）
+- Web 仪表盘实时刷新（每2秒 fetchStats）
+- 工具签名验证（ToolRegistry + SHA256 + 发布者注册表）
+- 安全策略补强：环境变量 8→30+（新增云平台/CI/CD/SaaS），路径 8→30+（新增 macOS/Linux/Windows 完整凭证目录），IP 15→20+（新增 APT C2 段）
+- MoonBit: moon check + moon fmt --check 0 警告
+- Rust: cargo clippy 0 警告
+- 恶意 .wasm 工具 evil-plugin 27/27 拦截验证
+- 文档全面更新（ROADMAP、CHANGELOG、CONTRIBUTING、使用指南）
+
+---
+
 ## v0.4.1 (2026-06-23) — wasmtime WASI 物理隔离
 
 - wasmtime 39 集成：Cargo.toml 启用 wasmtime + wasmtime-wasi

@@ -121,7 +121,7 @@ git push origin feature/xxx
 |:--:|------|:--:|
 | 高 | WASI 宿主函数拦截（wasmtime path_open/sock_send） | ✅ v0.4.1 完成 |
 | 高 | MoonBit→Rust FFI（编译 native + C ABI） | 待完成 |
-| 高 | 审计日志文件写入（JSONL 持久化） | 待完成 |
+| 高 | 审计日志文件写入（JSONL 持久化） | ✅ v0.5.0 完成 |
 | 中 | 策略热加载文件监控（notify crate） | 待完成 |
 | 中 | 工具签名验证（Ed25519） | 待完成 |
 | 低 | 多工具资源配额（CPU/Mem/Net 硬限制） | 规划中 |
