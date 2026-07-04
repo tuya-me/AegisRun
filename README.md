@@ -3,8 +3,8 @@
 **AI Agent 安全工具执行框架 — MoonBit 策略引擎 + Rust 沙箱运行时**
 
 [![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260608-blue)](https://moonbitlang.com)
-[![Rust](https://img.shields.io/badge/Rust-wasmtime%2039-orange)](runtime/)
-[![License](https://img.shields.io/badge/License-Apache--2.0-blue)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-wasmtime%2039-orange)](https://github.com/tuya-me/AegisRun/tree/clean-v2/runtime)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
 > MoonBit `>= 0.1.20260608` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 39
