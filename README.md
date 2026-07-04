@@ -203,4 +203,4 @@ aegisrun/
 
 ## 开源许可
 
-MIT License
+Apache-2.0
