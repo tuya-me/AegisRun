@@ -24,6 +24,10 @@ pub struct AegisRun {
   // 统计
   mut total_checks : Int
   mut total_blocks : Int
+  // ponytail: 追踪数组——绕过 HashMap 不可遍历，供 export_policy 使用
+  domain_bl_track : Array[String]
+  path_bl_track : Array[String]
+  tool_bl_track : Array[String]
 }
 
 // ═══════ 创建 ═══════
@@ -47,6 +51,9 @@ pub fn AegisRun::new(preset : String) -> AegisRun {
     env_cache: @hashmap.HashMap([], capacity=32),
     total_checks: 0,
     total_blocks: 0,
+    domain_bl_track: [],
+    path_bl_track: [],
+    tool_bl_track: [],
   }
 }
 
@@ -69,6 +76,7 @@ pub fn AegisRun::check_domain(self : AegisRun, domain : String) -> Decision {
   let result = check_domain(
     self.policy.blacklist_domains,
     self.policy.domain_suffix_patterns,
+    self.policy.ip_prefixes,
     domain,
   )
   self.domain_cache.set(domain, result)
@@ -160,6 +168,10 @@ pub fn AegisRun::switch_preset(self : AegisRun, name : String) -> Unit {
   self.path_cache = @hashmap.HashMap([], capacity=64)
   self.env_cache = @hashmap.HashMap([], capacity=32)
 
+  // ponytail: 清空旧黑名单再加载新预设，避免 strict 的 "*" 残留
+  self.policy.blacklist_domains = @hashmap.HashMap([], capacity=16)
+  self.policy.blacklist_paths = @hashmap.HashMap([], capacity=16)
+  self.policy.ip_prefixes = []
   match name {
     "strict" => {
       self.policy.preset_name = "strict"
@@ -180,12 +192,23 @@ pub fn AegisRun::block(
     "domain" => {
       self.policy.blacklist_domains.set(value, "manual")
       self.domain_cache = @hashmap.HashMap([], capacity=64)
+      if !self.domain_bl_track.contains(value) {
+        self.domain_bl_track.push(value)
+      }
     }
     "path" => {
       self.policy.blacklist_paths.set(value, "manual")
       self.path_cache = @hashmap.HashMap([], capacity=64)
+      if !self.path_bl_track.contains(value) {
+        self.path_bl_track.push(value)
+      }
     }
-    "tool" => self.policy.blacklist_tools.set(value, "manual")
+    "tool" => {
+      self.policy.blacklist_tools.set(value, "manual")
+      if !self.tool_bl_track.contains(value) {
+        self.tool_bl_track.push(value)
+      }
+    }
     _ => ()
   }
 }
@@ -206,14 +229,22 @@ pub fn AegisRun::allow(
 ///|
 pub fn AegisRun::export_policy(self : AegisRun) -> String {
   let mut r = ""
-  r = r + "preset=" + self.policy.preset_name + "|domain_bl="
-  // 注：HashMap 无法遍历，跳过细节导出
-  // 完整实现需修改 PolicyState 为可迭代结构
-  let _ = self.policy.blacklist_domains
-  let _ = self.policy.blacklist_paths
-  r = r + "(see AEGISRUN_POLICY env var format)|"
-  r = r + "domain_wl=(see whitelist)|"
-  r = r + "path_bl=(see path blacklist)"
+  r = r + "preset=" + self.policy.preset_name
+  r = r + "|domain_bl="
+  for i = 0; i < self.domain_bl_track.length(); i = i + 1 {
+    if i > 0 { r = r + "," }
+    r = r + self.domain_bl_track[i]
+  }
+  r = r + "|path_bl="
+  for i = 0; i < self.path_bl_track.length(); i = i + 1 {
+    if i > 0 { r = r + "," }
+    r = r + self.path_bl_track[i]
+  }
+  r = r + "|tool_bl="
+  for i = 0; i < self.tool_bl_track.length(); i = i + 1 {
+    if i > 0 { r = r + "," }
+    r = r + self.tool_bl_track[i]
+  }
   r
 }
 
@@ -276,4 +307,38 @@ pub fn AegisRun::block_rate(self : AegisRun) -> String {
   } else {
     (self.total_blocks * 100 / self.total_checks).to_string() + "%"
   }
+}
+
+// ═══════════════════════════════════════════
+// Tests
+// ═══════════════════════════════════════════
+
+test "aegisrun_facade" {
+  let aegis = AegisRun::new("standard")
+  assert_eq!(aegis.check_domain("evil.com"), Deny)
+  assert_eq!(aegis.check_domain("wttr.in"), Allow)
+  assert_eq!(aegis.check_path("/etc/passwd"), Deny)
+  assert_eq!(aegis.check_path("/tmp/logs/app.log"), Allow)
+  assert_eq!(aegis.check_env("OPENAI_API_KEY"), Deny)
+  assert_eq!(aegis.check_env("USER"), Allow)
+}
+
+test "preset_switch" {
+  let aegis = AegisRun::new("standard")
+  assert_eq!(aegis.check_domain("wttr.in"), Allow)
+  aegis.switch_preset("strict")
+  assert_eq!(aegis.check_domain("wttr.in"), Deny)
+  aegis.switch_preset("standard")
+  assert_eq!(aegis.check_domain("wttr.in"), Allow)
+}
+
+test "block_and_export" {
+  let aegis = AegisRun::new("standard")
+  aegis.block("domain", "blocked-test.com")
+  assert_eq!(aegis.check_domain("blocked-test.com"), Deny)
+  aegis.allow("domain", "allowed-test.com")
+  assert_eq!(aegis.check_domain("allowed-test.com"), Allow)
+  let exported = aegis.export_policy()
+  assert_eq!(exported.contains("preset=standard"), true)
+  assert_eq!(exported.contains("blocked-test.com"), true)
 }

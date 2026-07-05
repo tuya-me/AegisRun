@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AegisRun Admin Panel v0.3.1</title>
+<title>AegisRun Admin Panel v0.6.0</title>
 <style>
 :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --accent:#6c63ff; --green:#00cc88; --red:#ff4757; --yellow:#ffd700; --text:#c9d1d9; --dim:#8b949e }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -53,7 +53,7 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 <body>
 
 <header>
-  <div><h1>AegisRun</h1><span>Admin Panel v0.3.1 · MoonBit + Rust</span></div>
+  <div><h1>AegisRun</h1><span>Admin Panel v0.6.0 · MoonBit + Rust</span></div>
   <div style="display:flex;gap:16px;align-items:center">
     <span id="status" style="color:var(--green);font-size:13px">● Active</span>
     <span style="color:var(--dim);font-size:12px">Policy: <strong id="preset-name">standard</strong></span>
@@ -83,6 +83,7 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
       </div>
       <div class="progress-bar"><div class="progress-fill fill-green" id="bar-allow" style="width:50%"></div></div>
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--dim)"><span>CPU 45%</span><span>MEM 62%</span><span>Slot 67/100</span></div>
+      <div style="margin-top:8px;font-size:12px"><span>Status: </span><span id="stat-status" style="color:var(--green)">-</span><span style="margin-left:12px">Uptime: </span><span id="stat-uptime" style="color:var(--dim)">-</span></div>
     </div>
     <div class="card">
       <h3>⚡ 预设模板</h3>
@@ -226,10 +227,35 @@ function addItem(type){
 function removeItem(arr,val){ policy[arr]=policy[arr].filter(v=>v!==val); policy.preset='custom'; save(); }
 function applyPreset(){
   const v=document.getElementById('preset-select').value;
-  if(v==='standard'){policy=JSON.parse(JSON.stringify(defaultPolicy));policy.preset='standard';}
-  else if(v==='strict'){policy=JSON.parse(JSON.stringify(defaultPolicy));policy.preset='strict';policy.defense={layer1:true,layer2:true,layer3:true,layer4:true,layer5:false};policy.domainBL.push('*');policy.domainWL=[];}
-  else if(v==='permissive'){policy=JSON.parse(JSON.stringify(defaultPolicy));policy.preset='permissive';policy.defense.layer5=false;policy.domainBL=['192.168.*','10.*','172.16.*'];policy.pathBL=['/etc/passwd','/etc/shadow'];}
-  else{policy.preset='custom';}
+  // Build target policy for this preset
+  let target;
+  if(v==='standard'){
+    target=JSON.parse(JSON.stringify(defaultPolicy));
+  } else if(v==='strict'){
+    target=JSON.parse(JSON.stringify(defaultPolicy));
+    target.preset='strict';
+    target.defense={layer1:true,layer2:true,layer3:true,layer4:true,layer5:false};
+    target.domainBL.push('*');
+    target.domainWL=[];
+  } else if(v==='permissive'){
+    target=JSON.parse(JSON.stringify(defaultPolicy));
+    target.preset='permissive';
+    target.defense.layer5=false;
+    target.domainBL=['192.168.*','10.*','172.16.*'];
+    target.pathBL=['/etc/passwd','/etc/shadow'];
+  } else {
+    policy.preset='custom';
+    save();
+    return;
+  }
+  // Merge: keep user-added items that are NOT in the target's defaults
+  const arrayFields=['domainBL','domainWL','ipBL','pathBL','envPatterns','toolBL','domainSuffix'];
+  arrayFields.forEach(key=>{
+    const targetSet=new Set(target[key]||[]);
+    const userOnly=(policy[key]||[]).filter(x=>!targetSet.has(x));
+    target[key]=[...(target[key]||[]),...userOnly];
+  });
+  policy=target;
   save();
 }
 function exportPolicy(){
@@ -280,7 +306,7 @@ function exportCLI(){
   cmds.push('cmd /c "set AEGISRUN_POLICY='+policyStr+' && moon run src/main show"');
   cmds.push('');
   cmds.push('# 3. Test with intercept demo:');
-  cmds.push('cmd /c "set AEGISRUN_POLICY='+policyStr+' && set AEGISRUN_ATTACKS=all && moon run src/generator/intercept.mbt"');
+  cmds.push('cmd /c "set AEGISRUN_POLICY='+policyStr+' && set AEGISRUN_ATTACKS=all && moon run src/demo/intercept.mbt"');
   const txt = cmds.join('\n');
   navigator.clipboard.writeText(txt).then(()=>alert('CLI commands copied!\n\nPaste in CMD.\nSettings sync to AegisRun library via AEGISRUN_POLICY env var.'));
 }

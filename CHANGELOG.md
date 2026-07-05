@@ -2,6 +2,30 @@
 
 ---
 
+## v0.6.0 (2026-07-05) — 全面加固
+
+- Rust CI 补全（cargo build + clippy + test）
+- 真 SHA256 签名验证（sha2 crate 替代伪实现）
+- Rust/MoonBit/YAML 三方策略对齐（30+ 规则统一，serde_yaml 解析 preset）
+- `check_path()` bug 修复（contains→starts_with，消除误拦截）
+- MCP 端点策略丢失修复（使用实际策略而非每次 new Policy::standard()）
+- wasmtime 沙箱资源限制（30s 超时 + 256MB 内存上限）
+- AuditLogger flush 改为 append-only（不再 O(n) 重写全文件）
+- PolicyWatcher 从死代码激活（server 主循环中检测 policy.json 变更）
+- CORS preflight 支持（OPTIONS 返回 204）
+- Server 改为多线程（Arc<Policy> + thread::spawn per connection）
+- Dashboard 修复：stats DOM 元素、exportCLI 路径、applyPreset merge、版本号
+- YAML preset 同步：env 14→36，path 10→22，移除 api.openai.com/anthropic.com 白名单
+- MoonBit IP 前缀从硬编码改为迭代列表（core.mbt ip_prefixes 字段）
+- `export_policy()` 从占位符改为追踪数组实现（绕过 HashMap 不可遍历）
+- `has_attack("all")` 返回 true 修复
+- DNS guard 重复 CIDR 条目清除（194.26. / 37.59.）
+- Alert 限流（每10次输出1次，Emergency 不受限）
+- Monitor::update_metrics 添加 elapsed_secs 参数
+- 自动化测试：Rust 14 用例（6 测试函数）+ MoonBit 6 测试函数
+- 版本号全局统一至 0.6.0（moon.mod / Cargo.toml / cli.mbt / dashboard.html / lib.rs / main.rs）
+- 文档更新：CONTRIBUTING、使用指南、新建 SECURITY-POLICY.md，删除过时 WASMTIME_INTEGRATION.md
+
 ## v0.5.0 (2026-07-05) — 统一门面 + 策略补强 + CI 完善
 
 - 统一门面 `AegisRun::new("standard")`：一行 API 替代旧的四行调用，内置 HashMap 缓存

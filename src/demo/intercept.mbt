@@ -20,6 +20,7 @@ pub fn run_intercept_demo() -> Unit {
   let path_bl = @lib.get_blacklist_paths(policy)
   let env_sensitive = @lib.get_sensitive_envs(policy)
   let suffixes = @lib.get_domain_suffixes(policy)
+  let ip_prefixes = @lib.get_ip_prefixes(policy)
   let prefixes = @lib.get_path_prefixes(policy)
   let _sb = @lib.standard_sandbox()
   let ip_bl = @lib.new_ip_blacklist()
@@ -35,10 +36,10 @@ pub fn run_intercept_demo() -> Unit {
   println("")
 
   // ═══ Attack 1: evil.com ═══
-  if has_attack(attacks, "1") || attacks == "all" {
+  if has_attack(attacks, "1") {
     println("-- Attack 1: evil.com exfiltration --")
     println("  Tool attempts: POST https://evil.com/collect?data=x")
-    match @lib.check_domain(domain_bl, suffixes, "evil.com") {
+    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "evil.com") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] evil.com in blacklist — HTTP request never sent")
@@ -52,10 +53,10 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 2: *.cn suffix ═══
-  if has_attack(attacks, "2") || attacks == "all" {
+  if has_attack(attacks, "2") {
     println("-- Attack 2: *.cn suffix exfiltration --")
     println("  Tool attempts: POST https://data-harvest.cn/store")
-    match @lib.check_domain(domain_bl, suffixes, "data-harvest.cn") {
+    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "data-harvest.cn") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] *.cn suffix matched — sandbox intercept")
@@ -69,10 +70,10 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 3: internal IP ═══
-  if has_attack(attacks, "3") || attacks == "all" {
+  if has_attack(attacks, "3") {
     println("-- Attack 3: Internal network scan --")
     println("  Tool attempts: GET http://192.168.1.100:8080/admin")
-    match @lib.check_domain(domain_bl, suffixes, "192.168.1.100") {
+    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "192.168.1.100") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] 192.168.* internal network — blocked")
@@ -93,7 +94,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 4: /etc/passwd ═══
-  if has_attack(attacks, "4") || attacks == "all" {
+  if has_attack(attacks, "4") {
     println("-- Attack 4: /etc/passwd file theft --")
     println("  Tool attempts: open(/etc/passwd)")
     match @lib.check_path(path_bl, prefixes, "/etc/passwd") {
@@ -110,7 +111,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 5: SSH key ═══
-  if has_attack(attacks, "5") || attacks == "all" {
+  if has_attack(attacks, "5") {
     println("-- Attack 5: SSH key theft --")
     println("  Tool attempts: open(~/.ssh/id_rsa)")
     match @lib.check_path(path_bl, prefixes, "~/.ssh/id_rsa") {
@@ -127,7 +128,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 6: Windows SAM ═══
-  if has_attack(attacks, "6") || attacks == "all" {
+  if has_attack(attacks, "6") {
     println("-- Attack 6: Windows SAM access --")
     println("  Tool attempts: open(C:\\Windows\\System32\\config\\SAM)")
     match
@@ -145,7 +146,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 7: OPENAI_API_KEY ═══
-  if has_attack(attacks, "7") || attacks == "all" {
+  if has_attack(attacks, "7") {
     println("-- Attack 7: OpenAI API key theft --")
     println("  Tool attempts: getenv(OPENAI_API_KEY)")
     match @lib.check_env(env_sensitive, "OPENAI_API_KEY") {
@@ -162,7 +163,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 8: DATABASE_URL ═══
-  if has_attack(attacks, "8") || attacks == "all" {
+  if has_attack(attacks, "8") {
     println("-- Attack 8: Database credential theft --")
     println("  Tool attempts: getenv(DATABASE_URL)")
     match @lib.check_env(env_sensitive, "DATABASE_URL") {
@@ -179,10 +180,10 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 9: stealer.cc ═══
-  if has_attack(attacks, "9") || attacks == "all" {
+  if has_attack(attacks, "9") {
     println("-- Attack 9: stealer.cc exfiltration --")
     println("  Tool attempts: POST https://stealer.cc/api/upload")
-    match @lib.check_domain(domain_bl, suffixes, "stealer.cc") {
+    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "stealer.cc") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] stealer.cc in blacklist")
@@ -196,10 +197,10 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 10: localhost ═══
-  if has_attack(attacks, "10") || attacks == "all" {
+  if has_attack(attacks, "10") {
     println("-- Attack 10: Localhost attack --")
     println("  Tool attempts: GET http://localhost:3000/admin")
-    match @lib.check_domain(domain_bl, suffixes, "localhost") {
+    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "localhost") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] localhost in blacklist — SSRF prevented")
@@ -213,7 +214,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 11: GITHUB_TOKEN ═══
-  if has_attack(attacks, "11") || attacks == "all" {
+  if has_attack(attacks, "11") {
     println("-- Attack 11: CI token theft --")
     println("  Tool attempts: getenv(GITHUB_TOKEN)")
     match @lib.check_env(env_sensitive, "GITHUB_TOKEN") {
@@ -230,7 +231,7 @@ pub fn run_intercept_demo() -> Unit {
   }
 
   // ═══ Attack 12: AWS + evil.com combo ═══
-  if has_attack(attacks, "12") || attacks == "all" {
+  if has_attack(attacks, "12") {
     println("-- Attack 12: AWS credential + exfiltration combo --")
     println("  Tool attempts: open(~/.aws/credentials) then POST evil.com")
     match @lib.check_path(path_bl, prefixes, "~/.aws/credentials") {
@@ -243,7 +244,7 @@ pub fn run_intercept_demo() -> Unit {
         println("  [MISSED] ~/.aws/")
       }
     }
-    match @lib.check_domain(domain_bl, suffixes, "evil.com") {
+    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "evil.com") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] evil.com — exfiltration blocked")
@@ -281,7 +282,7 @@ pub fn run_intercept_demo() -> Unit {
 ///|
 fn has_attack(selection : String, num : String) -> Bool {
   if selection == "all" {
-    return false
-  } // handled by caller
+    return true
+  }
   selection.contains(num)
 }

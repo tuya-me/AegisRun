@@ -46,16 +46,16 @@ impl AuditLogger {
     }
 
     pub fn flush(&mut self) {
+        use std::io::Write;
         let mut content = String::new();
         for entry in &self.buffer {
             content.push_str(&serde_json::to_string(entry).unwrap());
             content.push('\n');
         }
-        // Append to file
-        if let Ok(existing) = fs::read_to_string(&self.path) {
-            content = existing + &content;
+        // ponytail: append-only，不读全文件重写
+        if let Ok(mut file) = std::fs::OpenOptions::new().append(true).create(true).open(&self.path) {
+            let _ = file.write_all(content.as_bytes());
         }
-        let _ = fs::write(&self.path, &content);
         self.buffer.clear();
     }
 }
@@ -115,14 +115,12 @@ pub fn load_policy(path: &str) -> Result<Policy, String> {
 
 use std::time::SystemTime as StdTime;
 
-#[allow(dead_code)] // Public API — called from external consumers
 pub struct PolicyWatcher {
     path: String,
     last_modified: Option<StdTime>,
     callback_count: usize,
 }
 
-#[allow(dead_code)]
 impl PolicyWatcher {
     pub fn new(path: &str) -> Self {
         let lm = Path::new(path).metadata().ok().and_then(|m| m.modified().ok());

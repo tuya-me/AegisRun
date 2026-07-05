@@ -2,25 +2,66 @@
 # AegisRun — Permissive Security Preset
 # "Light touch, dev environments"
 # Use for: local development, fully trusted tools
+# Aligned with MoonBit policy engine v0.6.0 (core.mbt)
 # ================================================
 
 blacklist:
   network:
     domains:
-      - "192.168.*"         # Still block local network
+      - "evil.com"           # Known malware C2
+      - "stealer.cc"         # Data exfiltration host
+      - "192.168.*"          # Still block local network
       - "10.*"
       - "172.16.*"
+      - "127.0.0.1"          # Loopback
+      - "localhost"
   filesystem:
     paths:
-      - "/etc/passwd"       # Still block absolute critical files
+      # Absolute critical system files
+      - "/etc/passwd"
       - "/etc/shadow"
+      - "/etc/ssl/private/*"
+      - "/var/run/secrets/*"
+      # Developer credentials
       - "~/.ssh/id_rsa*"
       - "~/.aws/credentials"
+      - "~/.kube/config"
+      # macOS keychains
+      - "~/Library/Keychains/*"
+      # Windows system
       - "C:\\Windows\\System32\\*"
+      - "C:\\ProgramData\\Docker\\config.json"
+      # Dangerous file types
+      - "*.pem"
+      - "*.key"
+      - "*.env"
   env_vars:
-    - "AWS_SECRET_ACCESS_KEY"  # Still block key secrets
+    # AI service keys
+    - "AWS_SECRET_ACCESS_KEY"
     - "OPENAI_API_KEY"
     - "ANTHROPIC_API_KEY"
+    - "COHERE_API_KEY"
+    - "DEEPSEEK_API_KEY"
+    - "GOOGLE_AI_API_KEY"
+    # Cloud platform keys
+    - "GCP_"
+    - "AZURE_"
+    - "ALIBABA_CLOUD"
+    # Database and cache URLs
+    - "DATABASE_URL"
+    - "REDIS_URL"
+    - "MONGODB_URI"
+    # CI/CD tokens
+    - "GITHUB_TOKEN"
+    - "GITLAB_TOKEN"
+    # Container and K8s
+    - "DOCKER_PASSWORD"
+    - "DOCKER_AUTH"
+    - "KUBECONFIG"
+    # Crypto and certificates
+    - "PRIVATE_KEY"
+    - "SSL_KEY"
+    - "NPM_TOKEN"
   tool_ids: []
 
 whitelist:

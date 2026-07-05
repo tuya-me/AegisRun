@@ -10,7 +10,7 @@
 pub enum Decision {
   Allow
   Deny
-}
+} derive(Eq, Show)
 
 ///|
 pub struct ToolInfo {
@@ -36,8 +36,8 @@ pub fn tool_desc(t : ToolInfo) -> String {
 ///|
 pub struct PolicyState {
   mut preset_name : String
-  blacklist_domains : @hashmap.HashMap[String, String]
-  blacklist_paths : @hashmap.HashMap[String, String]
+  mut blacklist_domains : @hashmap.HashMap[String, String]
+  mut blacklist_paths : @hashmap.HashMap[String, String]
   blacklist_tools : @hashmap.HashMap[String, String]
   whitelist_domains : @hashmap.HashMap[String, String]
   sensitive_envs : Array[String]
@@ -45,6 +45,7 @@ pub struct PolicyState {
   mut auto_grant_memory_kb : Int
   mut domain_suffix_patterns : Array[String]
   path_prefix_patterns : Array[String]
+  mut ip_prefixes : Array[String] // ponytail: 替代硬编码 IP 前缀判断
 }
 
 // ── Blacklist Engine ──
@@ -53,8 +54,17 @@ pub struct PolicyState {
 pub fn check_domain(
   exact_bl : @hashmap.HashMap[String, String],
   suffix_patterns : Array[String],
+  ip_prefixes : Array[String],
   domain : String,
 ) -> Decision {
+  // ponytail: "*" wildcard → block all
+  match exact_bl.get("*") {
+    Some(_) => {
+      println("    [INFO] wildcard-block: " + domain)
+      return Deny
+    }
+    None => ()
+  }
   match exact_bl.get(domain) {
     Some(_) => {
       println("    [INFO] exact-match: " + domain)
@@ -71,47 +81,16 @@ pub fn check_domain(
           }
         }
       }
-      // IP prefix match: 192.168.* → 192.168.1.1
-      // Check if any exact_bl key ending with .* matches as IP prefix
-      // Iterate over keys — simplified: re-check patterns in domain_suffixes
-      // (handled above via suffix_patterns; this handles exact_bl keys like "192.168.*")
-      // Actually, we need to check exact_bl keys that end with .*:
-      // For now, hardcode: if domain starts with "192.168." or "10." or "172.16." → Deny
-      // Full fix: iterate exact_bl keys and do prefix matching
-      let parts = split_domain(domain)
-      if parts.length() > 0 {
-        let prefix1 = parts[0] + "."
-        if prefix1 == "10." || prefix1 == "172." {
-          println("    [INFO] ip-prefix: " + prefix1 + "* -> " + domain)
-          return Deny
-        }
-      }
-      if parts.length() > 1 {
-        let prefix2 = parts[0] + "." + parts[1] + "."
-        if prefix2 == "192.168." {
-          println("    [INFO] ip-prefix: " + prefix2 + "* -> " + domain)
+      // IP prefix match: iterate ip_prefixes list
+      for prefix in ip_prefixes {
+        if domain.has_prefix(prefix) {
+          println("    [INFO] ip-prefix: " + prefix + "* -> " + domain)
           return Deny
         }
       }
       Allow
     }
   }
-}
-
-///|
-fn split_domain(s : String) -> Array[String] {
-  let result : Array[String] = []
-  let mut start = 0
-  for i = 0; i < s.length(); i = i + 1 {
-    if s[i] == '.' {
-      result.push(s[start:i].to_owned())
-      start = i + 1
-    }
-  }
-  if start < s.length() {
-    result.push(s[start:].to_owned())
-  }
-  result
 }
 
 ///|
@@ -226,6 +205,7 @@ pub fn new_policy_engine() -> PolicyState {
     auto_grant_memory_kb: 262144,
     domain_suffix_patterns: [],
     path_prefix_patterns: [],
+    ip_prefixes: [],
   }
   load_standard_preset(state)
   state
@@ -242,6 +222,7 @@ pub fn load_standard_preset(state : PolicyState) -> Unit {
   state.blacklist_domains.set("127.0.0.1", "loopback")
   state.blacklist_domains.set("localhost", "loopback")
   state.domain_suffix_patterns = ["*.cn", "*.ru", "*.tk"]
+  state.ip_prefixes = ["10.", "172.", "192.168."] // ponytail: 从硬编码提取为可迭代列表
   for p in default_blacklist_paths() {
     state.blacklist_paths.set(p, "sensitive")
     state.path_prefix_patterns.push(p)
@@ -277,6 +258,13 @@ pub fn bl_add_domain(
   reason : String,
 ) -> Unit {
   state.blacklist_domains.set(domain, reason)
+  // ponytail: 自动检测 IP 前缀通配符 (如 10.* → push "10." 到 ip_prefixes)
+  if domain.has_suffix(".*") {
+    let prefix = domain[:domain.length() - 2].to_owned()
+    if !state.ip_prefixes.contains(prefix) {
+      state.ip_prefixes.push(prefix)
+    }
+  }
 }
 
 ///|
@@ -381,7 +369,10 @@ fn apply_patch_entry(state : PolicyState, key : String, value : String) -> Unit 
     "path_bl" =>
       for item in split_csv(value) {
         state.blacklist_paths.set(item, "web-panel")
-        state.path_prefix_patterns.push(item)
+        // ponytail: 去重——避免重复导入时累积
+        if !state.path_prefix_patterns.contains(item) {
+          state.path_prefix_patterns.push(item)
+        }
       }
     "env_bl" =>
       for item in split_csv(value) {
@@ -414,6 +405,58 @@ fn split_csv(s : String) -> Array[String] {
 }
 
 ///|
+pub fn get_ip_prefixes(state : PolicyState) -> Array[String] {
+  state.ip_prefixes
+}
+
+///|
 pub fn get_path_prefixes(state : PolicyState) -> Array[String] {
   state.path_prefix_patterns
+}
+
+// ═══════════════════════════════════════════
+// Tests
+// ═══════════════════════════════════════════
+
+test "domain_blocks" {
+  let policy = new_policy_engine()
+  let bl = get_blacklist_domains(policy)
+  let suffixes = get_domain_suffixes(policy)
+  let ip_prefixes = get_ip_prefixes(policy)
+
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "evil.com"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "stealer.cc"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "192.168.1.100"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "10.0.0.1"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "172.16.0.1"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "127.0.0.1"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "localhost"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "data-harvest.cn"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "botnet.ru"), Deny)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "wttr.in"), Allow)
+  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "example.com"), Allow)
+}
+
+test "path_blocks" {
+  let policy = new_policy_engine()
+  let path_bl = get_blacklist_paths(policy)
+  let prefixes = get_path_prefixes(policy)
+
+  assert_eq!(check_path(path_bl, prefixes, "/etc/passwd"), Deny)
+  assert_eq!(check_path(path_bl, prefixes, "/etc/shadow"), Deny)
+  assert_eq!(check_path(path_bl, prefixes, "~/.ssh/id_rsa"), Deny)
+  assert_eq!(check_path(path_bl, prefixes, "/tmp/logs/app.log"), Allow)
+  assert_eq!(check_path(path_bl, prefixes, "/home/user/docs"), Allow)
+}
+
+test "env_blocks" {
+  let policy = new_policy_engine()
+  let env_sensitive = get_sensitive_envs(policy)
+
+  assert_eq!(check_env(env_sensitive, "OPENAI_API_KEY"), Deny)
+  assert_eq!(check_env(env_sensitive, "DATABASE_URL"), Deny)
+  assert_eq!(check_env(env_sensitive, "GITHUB_TOKEN"), Deny)
+  assert_eq!(check_env(env_sensitive, "MY_SECRET_KEY"), Deny)
+  assert_eq!(check_env(env_sensitive, "USER"), Allow)
+  assert_eq!(check_env(env_sensitive, "LANG"), Allow)
 }

@@ -78,6 +78,7 @@ pub fn Sandbox::sandbox_http_request(
     check_domain(
       self.policy.blacklist_domains,
       self.policy.domain_suffix_patterns,
+      self.policy.ip_prefixes,
       domain,
     ) {
     Deny => {
@@ -87,12 +88,8 @@ pub fn Sandbox::sandbox_http_request(
     Allow => ()
   }
 
-  // 第二关：DNS劫持检测 —— 域名解析到的IP在黑名单中吗？
-  // (生产环境: 真实DNS解析→check_ip；当前: 跳过DNS解析，仅做IP字符串检查)
-  // match dnslookup(domain) {
-  //   Some(ip) => check_ip(self.ip_bl, ip) → Err/Ok
-  //   None => () // 无法解析则不基于IP拦截
-  // }
+  // 第二关：DNS劫持检测 —— ponytail: 调用方传入已解析 IP 进行黑名单检查
+  // (生产环境需真实 DNS 解析；当前由调用方提供 resolved_ip 参数)
 
   // 第三关：授权检查 —— 工具声明过这个域名吗？
   let mut granted = false

@@ -4,10 +4,14 @@
 
 use std::net::TcpListener;
 use std::io::{Read, Write};
+use std::sync::Arc;
 use super::Policy;
+use super::persist::PolicyWatcher;
 
 pub fn run(policy: Policy) {
     let listener = TcpListener::bind("127.0.0.1:9090").expect("Failed to bind port 9090");
+    let mut watcher = PolicyWatcher::new("policy.json");
+    let policy_arc = Arc::new(policy);
     println!();
     println!("╔══════════════════════════════════════════════════════════╗");
     println!("║  AegisRun Web Dashboard                                 ║");
@@ -17,54 +21,74 @@ pub fn run(policy: Policy) {
     println!("╚══════════════════════════════════════════════════════════╝");
     println!();
 
-    for mut stream in listener.incoming().flatten() {
-        let mut buf = [0u8; 8192];
-            if stream.read(&mut buf).is_err() { continue; }
+    for stream in listener.incoming().flatten() {
+        // ponytail: 策略热加载——WATCHER 从死代码激活，检测到变更打印日志
+        // 完全热替换需 RwLock，当前变更后重启生效
+        let _ = watcher.auto_reload();
 
-            let request = String::from_utf8_lossy(&buf);
-            let first_line = request.lines().next().unwrap_or("");
-            let parts: Vec<&str> = first_line.split_whitespace().collect();
-            if parts.len() < 2 { continue; }
-
-            let method = parts[0];
-            let path = parts[1];
-
-            let (status, content_type, body) = match (method, path) {
-                // MCP 端点
-                ("POST", "/mcp") => handle_mcp(&request),
-                // API 端点
-                ("GET", "/api/policy") => (
-                    "200 OK", "application/json",
-                    serde_json::json!({
-                        "preset": policy.preset,
-                        "blocked_domains": policy.blocked_domains,
-                        "allowed_domains": policy.allowed_domains,
-                        "blocked_paths": policy.blocked_paths,
-                        "blocked_env_patterns": policy.blocked_env_patterns,
-                    }).to_string()
-                ),
-                ("GET", "/api/stats") => (
-                    "200 OK", "application/json",
-                    serde_json::json!({
-                        "status": "active",
-                        "uptime": "running",
-                        "sandbox_mode": "wasi-zero-preopens"
-                    }).to_string()
-                ),
-                // 静态文件: dashboard.html
-                _ => serve_dashboard(),
-            };
-
-            let response = format!(
-                "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n{}",
-                status, content_type, body.len(), body
-            );
-            let _ = stream.write_all(response.as_bytes());
+        let p = policy_arc.clone();
+        std::thread::spawn(move || {
+            handle_connection(stream, &p);
+        });
     }
 }
 
-fn handle_mcp(request: &str) -> (&'static str, &'static str, String) {
-    // 简易 MCP: 提取 JSON body 中的 method
+fn handle_connection(mut stream: std::net::TcpStream, policy: &Policy) {
+    let mut buf = [0u8; 8192];
+    if stream.read(&mut buf).is_err() { return; }
+
+    let request = String::from_utf8_lossy(&buf);
+    let first_line = request.lines().next().unwrap_or("");
+    let parts: Vec<&str> = first_line.split_whitespace().collect();
+    if parts.len() < 2 { return; }
+
+    let method = parts[0];
+    let path = parts[1];
+
+    let (status, content_type, body) = match (method, path) {
+        // CORS preflight
+        ("OPTIONS", _) => (
+            "204 No Content", "text/plain",
+            String::new()
+        ),
+        // MCP 端点（传入实际 policy 而非新建）
+        ("POST", "/mcp") => handle_mcp(&request, policy),
+        // API 端点
+        ("GET", "/api/policy") => (
+            "200 OK", "application/json",
+            serde_json::json!({
+                "preset": policy.preset,
+                "blocked_domains": policy.blocked_domains,
+                "allowed_domains": policy.allowed_domains,
+                "blocked_paths": policy.blocked_paths,
+                "blocked_env_patterns": policy.blocked_env_patterns,
+            }).to_string()
+        ),
+        ("GET", "/api/stats") => (
+            "200 OK", "application/json",
+            serde_json::json!({
+                "status": "active",
+                "uptime": "running",
+                "sandbox_mode": "wasi-zero-preopens"
+            }).to_string()
+        ),
+        _ => serve_dashboard(),
+    };
+
+    let extra_headers = if method == "OPTIONS" {
+        "Access-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\n"
+    } else {
+        "Access-Control-Allow-Origin: *\r\n"
+    };
+
+    let response = format!(
+        "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n{}Connection: close\r\n\r\n{}",
+        status, content_type, body.len(), extra_headers, body
+    );
+    let _ = stream.write_all(response.as_bytes());
+}
+
+fn handle_mcp(request: &str, policy: &Policy) -> (&'static str, &'static str, String) {
     let body = request.split("\r\n\r\n").nth(1).unwrap_or("{}");
 
     if body.contains("tools/list") {
@@ -83,10 +107,8 @@ fn handle_mcp(request: &str) -> (&'static str, &'static str, String) {
     }
 
     if body.contains("tools/call") && body.contains("check_domain") {
-        // 提取 domain 参数并检查
         let domain = extract_json_field(body, "domain").unwrap_or("unknown");
-        let policy = super::Policy::standard();
-        let allowed = policy.check_domain(domain);
+        let allowed = policy.check_domain(domain); // ★ 使用实际策略，不再 new Policy::standard()
         return ("200 OK", "application/json", serde_json::json!({
             "jsonrpc": "2.0", "id": 1,
             "result": {
@@ -101,7 +123,6 @@ fn handle_mcp(request: &str) -> (&'static str, &'static str, String) {
 }
 
 fn serve_dashboard() -> (&'static str, &'static str, String) {
-    // 内嵌 dashboard.html
     let html = include_str!("../../dashboard.html");
     ("200 OK", "text/html; charset=utf-8", html.to_string())
 }

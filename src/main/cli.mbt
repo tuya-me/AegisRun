@@ -9,7 +9,7 @@ fn print_banner() -> Unit {
   println(
     "  ╔══════════════════════════════════════════════════════╗",
   )
-  println("  ║   AegisRun Lite v0.1.0                              ║")
+  println("  ║   AegisRun Lite v0.6.0                              ║")
   println("  ║   AI Agent Secure Tool Runtime — MoonBit + Wasm     ║")
   println(
     "  ╚══════════════════════════════════════════════════════╝",

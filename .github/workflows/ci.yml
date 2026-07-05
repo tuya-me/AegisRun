@@ -7,8 +7,8 @@ on:
     branches: [master, main]
 
 jobs:
-  code-quality:
-    name: Code Quality Checks
+  moonbit-checks:
+    name: MoonBit Quality Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,7 +17,7 @@ jobs:
       - name: Install MoonBit toolchain
         uses: moonbitlang/setup-moonbit@v1
         with:
-          moon-version: latest
+          moon-version: "0.6.10"
 
       - name: Module info
         run: moon info
@@ -25,8 +25,33 @@ jobs:
       - name: Format check
         run: moon fmt --check
 
-      - name: Compile check (warnings as errors)
+      - name: Compile check
         run: moon check
 
       - name: Build
         run: moon build
+
+      - name: Test
+        run: moon test
+
+  rust-checks:
+    name: Rust Quality Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build
+
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Test
+        run: cargo test

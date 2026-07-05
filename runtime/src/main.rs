@@ -1,4 +1,4 @@
-//! AegisRun CLI v0.4.0 — 统一入口
+//! AegisRun CLI v0.6.0 — 统一入口
 //! 该二进制本身不是库——库在 src/lib.rs 和 src/lib/*.mbt
 //!
 //! 作为库使用:
@@ -136,7 +136,7 @@ fn run_sandbox(wasm_path: &str) {
 
 fn print_help() {
     println!(r#"
-AegisRun v0.4.0 — AI Agent Secure Tool Runtime
+AegisRun v0.6.0 — AI Agent Secure Tool Runtime
 
 USAGE:
   aegisrun demo                         Policy engine demo

@@ -1,6 +1,6 @@
 # AegisRun 路线图（Roadmap）
 
-> v0.5.0 当前版本 | 更新于 2026-07-05
+> v0.6.0 当前版本 | 更新于 2026-07-05
 
 ---
 
@@ -22,7 +22,22 @@
 
 ---
 
-## v0.5.0 当前 ← 最新版本
+## v0.6.0 当前 ← 最新版本
+
+- [x] Rust CI 补全（cargo build + clippy + test）
+- [x] 真 SHA256 签名验证（sha2 crate）
+- [x] Rust/MoonBit/YAML 三方策略对齐（30+ 规则统一）
+- [x] `check_path()` bug 修复（contains→starts_with）
+- [x] MCP 策略丢失修复
+- [x] wasmtime 资源限制（30s 超时 + 256MB 内存）
+- [x] AuditLogger append-only 写盘
+- [x] PolicyWatcher 从死代码激活
+- [x] CORS preflight + Dashboard 多项修复
+- [x] IP 前缀迭代 + export_policy 实现
+- [x] 自动化测试（Rust 14 用例 + MoonBit 6 函数）
+- [x] 版本号全局统一 + 文档更新
+
+## v0.5.0 ✅
 
 - [x] 统一门面一行 API（`AegisRun::new("standard").check_domain("evil.com")`）
 - [x] 审计日志 JSONL 持久化（50条批量刷盘）

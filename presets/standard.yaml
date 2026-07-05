@@ -2,44 +2,100 @@
 # AegisRun — Standard Security Preset (RECOMMENDED)
 # "Common APIs OK, block sensitive"
 # Use for: daily development, trusted tools
+# Aligned with MoonBit policy engine v0.6.0 (core.mbt)
 # ================================================
 
 blacklist:
   network:
     domains:
-      - "192.168.*"         # Block local network
-      - "10.*"
-      - "172.16.*"
-      - "127.0.0.1"
-      - "localhost"
-      - "*.local"
+      - "evil.com"           # Known malware C2
+      - "stealer.cc"         # Data exfiltration host
+      - "192.168.*"          # Internal network
+      - "10.*"               # Private network
+      - "172.16.*"           # Private network
+      - "127.0.0.1"          # Loopback
+      - "localhost"          # Loopback
+      - "*.cn"               # Country-code TLD restriction
+      - "*.ru"               # Country-code TLD restriction
+      - "*.tk"               # Country-code TLD restriction
   filesystem:
     paths:
+      # ── Linux system files ──
       - "/etc/passwd"
       - "/etc/shadow"
-      - "/etc/hosts"
-      - "~/.ssh/*"          # SSH keys
-      - "~/.aws/*"          # AWS credentials
-      - "~/.gnupg/*"        # GPG keys
-      - "~/.config/*"
-      - "C:\\Windows\\*"
-      - "C:\\Program Files\\*"
-      - "C:\\Program Files (x86)\\*"
+      - "/etc/ssl/private/*"
+      - "/var/run/secrets/*"
+      - "/proc/self/environ"
+      - "/root/.bash_history"
+      - "/var/log/auth.log"
+      # ── Developer credentials ──
+      - "~/.ssh/*"
+      - "~/.aws/*"
+      - "~/.gnupg/*"
+      - "~/.kube/config"
+      # ── macOS keychains and browsers ──
+      - "~/Library/Keychains/*"
+      - "~/Library/Application Support/Google/Chrome/*"
+      - "~/Library/Application Support/Firefox/*"
+      # ── Windows system ──
+      - "C:\\Windows\\System32\\config\\*"
+      - "C:\\Users\\*\\.kube\\config"
+      - "C:\\Users\\*\\AppData\\Roaming\\npm\\npmrc"
+      - "C:\\ProgramData\\Docker\\config.json"
+      # ── Dangerous file types (any location) ──
+      - "*.pem"
+      - "*.key"
+      - "*.env"
+      - "config.yaml"
   env_vars:
-    - "AWS_SECRET_ACCESS_KEY"
-    - "AWS_ACCESS_KEY_ID"
+    # ── AI services ──
     - "OPENAI_API_KEY"
     - "ANTHROPIC_API_KEY"
     - "COHERE_API_KEY"
+    - "DEEPSEEK_API_KEY"
+    - "GOOGLE_AI_API_KEY"
+    # ── Cloud platforms (AWS / GCP / Azure / Alibaba / Tencent / Huawei) ──
+    - "AWS_SECRET"
+    - "AWS_ACCESS_KEY"
+    - "GCP_"
+    - "AZURE_"
+    - "ALIBABA_CLOUD"
+    - "TENCENT_CLOUD"
+    - "HUAWEI_CLOUD"
+    # ── Databases and caches ──
     - "DATABASE_URL"
     - "REDIS_URL"
+    - "MONGODB_URI"
     - "RABBITMQ_URL"
+    - "POSTGRES_"
+    - "MYSQL_"
+    # ── CI/CD ──
     - "GITHUB_TOKEN"
     - "GITLAB_TOKEN"
+    - "BITBUCKET_"
+    - "CIRCLECI_"
+    - "JENKINS_"
+    - "TRAVIS_"
+    # ── Communication and payments ──
+    - "SENDGRID_API"
+    - "TWILIO_"
+    - "STRIPE_"
+    - "SLACK_TOKEN"
+    - "SLACK_WEBHOOK"
+    - "NOTION_TOKEN"
+    # ── Containers and Kubernetes ──
     - "DOCKER_PASSWORD"
     - "DOCKER_AUTH"
     - "KUBECONFIG"
-    - "KUBE_CONFIG"
+    - "KUBE_"
+    # ── Encryption and certificates ──
+    - "PRIVATE_KEY"
+    - "SSL_KEY"
+    - "CERTIFICATE"
+    - "PGP_"
+    - "GPG_"
+    - "NPM_TOKEN"
+    - "PYPI_TOKEN"
   tool_ids: []
 
 whitelist:
@@ -47,8 +103,6 @@ whitelist:
     domains:
       - "api.github.com"    # GitHub API
       - "wttr.in"           # Weather service
-      - "api.openai.com"    # OpenAI API
-      - "api.anthropic.com" # Anthropic API
   filesystem:
     paths:
       - "/tmp/aegisrun/"

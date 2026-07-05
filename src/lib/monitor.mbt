@@ -76,6 +76,7 @@ pub fn PressureMonitor::update_metrics(
   queue : Int,
   avg_ms : Int,
   denial_rate : Int,
+  elapsed_secs : Int, // ponytail: 由调用方传入实际经过秒数
 ) -> Unit {
   self.cpu_pct = cpu_pct
   self.mem_pct = mem_pct
@@ -92,7 +93,7 @@ pub fn PressureMonitor::update_metrics(
     self.current_level = new_level
     self.level_duration_sec = 0
   } else {
-    self.level_duration_sec = self.level_duration_sec + 1
+    self.level_duration_sec = self.level_duration_sec + elapsed_secs
   }
 
   // 熔断器逻辑

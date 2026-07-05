@@ -15,7 +15,7 @@ pub enum AlertLevel {
   Warning // 警告
   Critical // 严重
   Emergency // 紧急
-}
+} derive(Eq)
 
 ///|
 pub struct AlertConfig {
@@ -35,6 +35,7 @@ pub struct AlertManager {
   mut emergency_count : Int
   mut last_alert_level : AlertLevel
   mut recovery_requested : Bool
+  mut throttle_counter : Int // ponytail: 限流计数器，每10次告警才输出一次
 }
 
 // 默认告警配置
@@ -60,6 +61,7 @@ pub fn new_alert_manager(config : AlertConfig) -> AlertManager {
     emergency_count: 0,
     last_alert_level: Info,
     recovery_requested: false,
+    throttle_counter: 0,
   }
 }
 
@@ -74,6 +76,12 @@ pub fn AlertManager::send_alert(
 ) -> Unit {
   self.alert_count = self.alert_count + 1
   self.last_alert_level = level
+  self.throttle_counter = self.throttle_counter + 1
+
+  // ponytail: 限流——每10次告警或紧急级别才输出，避免控制台刷屏
+  if self.throttle_counter % 10 != 0 && level != Emergency {
+    return
+  }
 
   match level {
     Warning => println("[ALERT:WARN] " + title + " — " + body)

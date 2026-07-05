@@ -1,4 +1,4 @@
-//! AegisRun Rust Library v0.4.0
+//! AegisRun Rust Library v0.6.0
 //!
 //! ```rust
 //! use aegisrun_runtime::Policy;
@@ -11,9 +11,10 @@
 //! ```
 
 use std::fs;
+use serde::Deserialize;
 
 // ═══════════════════════════════════════
-// 策略引擎
+// 策略引擎 — 统一从 YAML preset 加载
 // ═══════════════════════════════════════
 
 #[derive(Clone)]
@@ -27,26 +28,112 @@ pub struct Policy {
     pub preset: String,
 }
 
+// ── YAML 反序列化结构 ──
+
+#[derive(Deserialize, Default)]
+struct PresetYaml {
+    blacklist: Option<PresetBlacklist>,
+    whitelist: Option<PresetWhitelist>,
+}
+
+#[derive(Deserialize, Default)]
+struct PresetBlacklist {
+    network: Option<PresetNetwork>,
+    filesystem: Option<PresetFilesystem>,
+    env_vars: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Default)]
+struct PresetNetwork {
+    domains: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Default)]
+struct PresetFilesystem {
+    paths: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Default)]
+struct PresetWhitelist {
+    network: Option<PresetNetwork>,
+}
+
 impl Policy {
-    pub fn standard() -> Self {
+    /// 从编译期嵌入的 YAML preset 加载策略
+    pub fn from_preset(name: &str) -> Self {
+        let yaml_str = match name {
+            "strict" => include_str!("../../presets/strict.yaml"),
+            "permissive" => include_str!("../../presets/permissive.yaml"),
+            _ => include_str!("../../presets/standard.yaml"),
+        };
+        Self::from_yaml(yaml_str, name)
+    }
+
+    fn from_yaml(yaml_str: &str, name: &str) -> Self {
+        let preset: PresetYaml = serde_yaml::from_str(yaml_str).unwrap_or_default();
+        let mut blocked_domains = Vec::new();
+        let mut domain_suffixes = Vec::new();
+        let mut blocked_paths = Vec::new();
+        let mut path_prefixes = Vec::new();
+        let mut blocked_env_patterns = Vec::new();
+        let mut allowed_domains = Vec::new();
+
+        if let Some(bl) = &preset.blacklist {
+            if let Some(net) = &bl.network {
+                if let Some(domains) = &net.domains {
+                    for d in domains {
+                        if d.starts_with("*.") {
+                            domain_suffixes.push(d.clone());
+                        } else {
+                            blocked_domains.push(d.clone());
+                        }
+                    }
+                }
+            }
+            if let Some(fs) = &bl.filesystem {
+                if let Some(paths) = &fs.paths {
+                    for p in paths {
+                        if p.ends_with('*') {
+                            let prefix = p.trim_end_matches('*').trim_end_matches('/');
+                            path_prefixes.push(prefix.to_string());
+                        } else {
+                            blocked_paths.push(p.clone());
+                        }
+                    }
+                }
+            }
+            if let Some(envs) = &bl.env_vars {
+                blocked_env_patterns = envs.clone();
+            }
+        }
+
+        if let Some(wl) = &preset.whitelist {
+            if let Some(net) = &wl.network {
+                if let Some(domains) = &net.domains {
+                    allowed_domains = domains.clone();
+                }
+            }
+        }
+
         Self {
-            blocked_domains: vec!["evil.com".into(),"stealer.cc".into(),"192.168.*".into(),"10.*".into(),"172.16.*".into(),"127.0.0.1".into(),"localhost".into()],
-            domain_suffixes: vec!["*.cn".into(),"*.ru".into(),"*.tk".into()],
-            blocked_paths: vec!["/etc/passwd".into(),"/etc/shadow".into(),"~/.ssh/id_rsa".into(),"~/.aws/credentials".into()],
-            path_prefixes: vec!["~/.ssh/".into(),"~/.aws/".into(),"/etc/".into()],
-            blocked_env_patterns: vec!["AWS_SECRET".into(),"OPENAI_API_KEY".into(),"ANTHROPIC_API_KEY".into(),"DATABASE_URL".into(),"REDIS_URL".into(),"GITHUB_TOKEN".into(),"DOCKER_PASSWORD".into(),"KUBECONFIG".into()],
-            allowed_domains: vec!["wttr.in".into(),"api.github.com".into()],
-            preset: "standard".into(),
+            blocked_domains,
+            domain_suffixes,
+            blocked_paths,
+            path_prefixes,
+            blocked_env_patterns,
+            allowed_domains,
+            preset: name.to_string(),
         }
     }
 
-    pub fn strict() -> Self { let mut p = Self::standard(); p.blocked_domains.push("*".into()); p.allowed_domains.clear(); p.preset = "strict".into(); p }
-    pub fn permissive() -> Self { let mut p = Self::standard(); p.blocked_domains.retain(|d| d.starts_with("192.")||d.starts_with("10.")||d.starts_with("172.")); p.blocked_paths = vec!["/etc/passwd".into(),"/etc/shadow".into()]; p.path_prefixes = vec!["/etc/".into()]; p.preset = "permissive".into(); p }
+    pub fn standard() -> Self { Self::from_preset("standard") }
+    pub fn strict() -> Self { Self::from_preset("strict") }
+    pub fn permissive() -> Self { Self::from_preset("permissive") }
 
     /// 检查域名: true=放行
     pub fn check_domain(&self, domain: &str) -> bool {
         for b in &self.blocked_domains {
-            if b == domain { return false; }
+            if b == "*" || b == domain { return false; }
             if b.ends_with(".*") && domain.starts_with(&b[..b.len()-2]) { return false; }
         }
         for s in &self.domain_suffixes {
@@ -55,17 +142,29 @@ impl Policy {
         true
     }
 
-    /// 检查路径: true=放行
+    /// 检查路径: true=放行（exact == + prefix starts_with）
     pub fn check_path(&self, path: &str) -> bool {
-        for b in &self.blocked_paths { if path.contains(b.as_str()) { return false; } }
-        for pr in &self.path_prefixes { if path.contains(pr.as_str()) { return false; } }
+        for b in &self.blocked_paths {
+            if b == "*" || path == b.as_str() { return false; }
+            // ponytail: "/" as exact path in strict mode → also blocks all absolute paths
+            if b == "/" && path.starts_with('/') { return false; }
+        }
+        for pr in &self.path_prefixes {
+            if pr.is_empty() || path.starts_with(pr.as_str()) { return false; }
+        }
         true
     }
 
     /// 检查环境变量: true=放行
     pub fn check_env(&self, var: &str) -> bool {
-        for p in &self.blocked_env_patterns { if var.to_uppercase().contains(&p.to_uppercase()) { return false; } }
-        for kw in &["KEY","SECRET","TOKEN","PASSWORD","CREDENTIAL"] { if var.to_uppercase().contains(kw) { return false; } }
+        let upper = var.to_uppercase();
+        for p in &self.blocked_env_patterns {
+            if p == "*" { return false; }
+            if upper.contains(&p.to_uppercase()) { return false; }
+        }
+        for kw in &["KEY","SECRET","TOKEN","PASSWORD","CREDENTIAL"] {
+            if upper.contains(kw) { return false; }
+        }
         true
     }
 
@@ -167,4 +266,90 @@ fn extract_hosts(line: &str) -> Vec<String> {
         }
     }
     hosts
+}
+
+// ═══════════════════════════════════════
+// Tests
+// ═══════════════════════════════════════
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_check_domain_blocks() {
+        let p = Policy::standard();
+        assert!(!p.check_domain("evil.com"));
+        assert!(!p.check_domain("stealer.cc"));
+        assert!(!p.check_domain("192.168.1.100"));
+        assert!(!p.check_domain("10.0.0.1"));
+        assert!(!p.check_domain("127.0.0.1"));
+        assert!(!p.check_domain("localhost"));
+        assert!(!p.check_domain("data-harvest.cn"));
+    }
+
+    #[test]
+    fn test_check_domain_allows() {
+        let p = Policy::standard();
+        assert!(p.check_domain("wttr.in"));
+        assert!(p.check_domain("api.github.com"));
+        assert!(p.check_domain("example.com"));
+    }
+
+    #[test]
+    fn test_check_path_blocks() {
+        let p = Policy::standard();
+        assert!(!p.check_path("/etc/passwd"));
+        assert!(!p.check_path("/etc/shadow"));
+        assert!(!p.check_path("~/.ssh/id_rsa"));
+        assert!(!p.check_path("~/.aws/credentials"));
+    }
+
+    #[test]
+    fn test_check_path_boundary() {
+        let p = Policy::standard();
+        // 包含 /etc/ 但不是被拦截的精确路径 → 应放行
+        assert!(p.check_path("/tmp/reports/etc_summary.txt"));
+        assert!(p.check_path("/home/user/docs"));
+    }
+
+    #[test]
+    fn test_check_env_blocks() {
+        let p = Policy::standard();
+        assert!(!p.check_env("OPENAI_API_KEY"));
+        assert!(!p.check_env("DATABASE_URL"));
+        assert!(!p.check_env("GITHUB_TOKEN"));
+        assert!(!p.check_env("ANTHROPIC_API_KEY"));
+    }
+
+    #[test]
+    fn test_check_env_allows() {
+        let p = Policy::standard();
+        assert!(p.check_env("USER"));
+        assert!(p.check_env("LANG"));
+        assert!(p.check_env("HOME"));
+    }
+
+    #[test]
+    fn test_strict_preset() {
+        let p = Policy::strict();
+        // strict: all domains blocked
+        assert!(!p.check_domain("example.com"));
+        assert!(!p.check_domain("wttr.in"));
+        // strict: all paths blocked
+        assert!(!p.check_path("/tmp/test.txt"));
+        // strict: all env blocked
+        assert!(!p.check_env("USER"));
+    }
+
+    #[test]
+    fn test_permissive_preset() {
+        let p = Policy::permissive();
+        // permissive: still blocks local network
+        assert!(!p.check_domain("192.168.1.1"));
+        // permissive: allows external
+        assert!(p.check_domain("example.com"));
+        // permissive: still blocks critical paths
+        assert!(!p.check_path("/etc/passwd"));
+    }
 }

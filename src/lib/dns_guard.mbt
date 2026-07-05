@@ -65,10 +65,7 @@ fn load_default_ip_rules(bl : IpBlacklist) -> Unit {
   // .tk .ml .ga .cf — 在 domain_suffix_patterns 中已拦截
   // 8. DNS over HTTPS (绕过企业DNS过滤)
   // dns.google cloudflare-dns.com 需在网络层拦截
-  // 9. 已知恶意域名注册商
-  bl.cidr_prefixes.push({ prefix: "194.26.", reason: "malware-registrar" })
-  bl.cidr_prefixes.push({ prefix: "37.59.", reason: "malware" })
-  // 6. 链路本地/组播
+  // 9. 链路本地/组播
   bl.cidr_prefixes.push({ prefix: "169.254.", reason: "link-local" })
   bl.cidr_prefixes.push({ prefix: "224.", reason: "multicast" })
 }

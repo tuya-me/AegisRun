@@ -46,6 +46,7 @@ pub fn demo2(policy : @lib.PolicyState) -> Unit {
   hr("Demo 2: Malicious Tool — Data Exfiltration Attempts")
   let bl = @lib.get_blacklist_domains(policy)
   let suffixes = @lib.get_domain_suffixes(policy)
+  let ip_prefixes = @lib.get_ip_prefixes(policy)
   println("  Scenario: weather-query tries to POST data while querying weather")
   println("")
   let targets : Array[String] = [
@@ -53,7 +54,7 @@ pub fn demo2(policy : @lib.PolicyState) -> Unit {
   ]
   for domain in targets {
     println("  Tool attempts: POST https://" + domain + "/collect")
-    match @lib.check_domain(bl, suffixes, domain) {
+    match @lib.check_domain(bl, suffixes, ip_prefixes, domain) {
       Allow => ok(domain + " ALLOWED (declared domain)")
       Deny => blk(domain + " DENIED — sandbox blocks before HTTP request")
     }

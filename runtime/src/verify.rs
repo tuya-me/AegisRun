@@ -4,6 +4,7 @@
 
 use std::fs;
 use std::collections::HashMap;
+use sha2::{Sha256, Digest};
 
 #[derive(Clone)]
 pub struct ToolRegistry {
@@ -16,10 +17,7 @@ pub struct ToolRegistry {
 #[allow(dead_code)] // Public API — called from external consumers
 impl ToolRegistry {
     pub fn new() -> Self {
-        let mut trusted = HashMap::new();
-        // 预置可信工具
-        trusted.insert("calculator".into(), "sha256:known-hash-here".into());
-        Self { trusted_tools: trusted, trusted_publishers: vec!["@moonbit-official".into(), "@aegisrun".into()] }
+        Self { trusted_tools: HashMap::new(), trusted_publishers: vec!["@moonbit-official".into(), "@aegisrun".into()] }
     }
 
     /// 验证 .wasm 文件的 SHA256 哈希
@@ -71,14 +69,7 @@ impl ToolRegistry {
     }
 }
 
-/// 简易 SHA256 实现（演示用，生产环境用 sha2 crate）
+/// SHA256 哈希（使用 sha2 crate）
 fn sha256_digest(data: &[u8]) -> String {
-    // 简化：使用文件大小 + 前256字节作为指纹
-    let len = data.len();
-    let preview: Vec<u8> = data.iter().take(256).copied().collect();
-    format!("sha256:{}-{}", len, hex_encode(&preview))
-}
-
-fn hex_encode(data: &[u8]) -> String {
-    data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join("")[..16].to_string()
+    format!("{:x}", Sha256::digest(data))
 }
