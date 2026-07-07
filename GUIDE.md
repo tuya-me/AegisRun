@@ -124,10 +124,16 @@ moon run src/xxx/xxx.mbt     ← 编译+运行
 
 | 变量 | 作用 | 示例 |
 |------|------|------|
+| `AEGISRUN_POLICY` | 从 Web 面板同步策略到本地引擎 | `set AEGISRUN_POLICY=domain_bl=evil.com\|path_bl=/etc/passwd` |
+
+Web 面板修改策略后，点「复制 CLI 命令」→ 粘贴到终端 → 引擎即时加载，无需重启。
+
+**开发调试用**（不设 = 跑全部 demo）：
+
+| 变量 | 作用 | 示例 |
+|------|------|------|
 | `AEGISRUN_DEMO` | 选择单独 demo（1-7） | `set AEGISRUN_DEMO=2` |
 | `AEGISRUN_ATTACKS` | 选择攻击类型（1-12） | `set AEGISRUN_ATTACKS=1,4,7,12` |
-
-不设变量 = 默认跑全部。
 
 ---
 

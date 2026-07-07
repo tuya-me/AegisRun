@@ -113,6 +113,15 @@ start dashboard.html                # 或双击打开
 :: 网页改策略 → 点"复制CLI命令" → 粘贴到CMD → 同步到库
 ```
 
+### 策略同步（环境变量）
+
+Web 面板修改策略后导出为 `AEGISRUN_POLICY` 变量，引擎启动时自动加载：
+
+```cmd
+set AEGISRUN_POLICY=domain_bl=evil.com,stealer.cc|path_bl=/etc/passwd|domain_wl=wttr.in
+moon run src/main
+```
+
 ### MCP 集成
 
 ```json
