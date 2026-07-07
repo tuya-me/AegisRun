@@ -34,22 +34,18 @@ AegisRun 的设计参考了以下项目与论文：
 - Microsoft CFP 2024: _"ToolSandbox: Stateful Execution Monitoring for LLM Agents"_ — 学术上验证了「AI Agent 工具需要状态机级别的安全拦截」
 - [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/) — LLM06（过度代理）和 LLM08（向量和嵌入）启发了我们的工具权限门控
 
-## 不做什么
+## 问题排查
 
-AegisRun 是 OSC2026 参赛项目，不是商业安全产品。以下事情我们**明确不做**：
-
-- **不承诺漏洞响应 SLA**。发现安全缺陷请直接在 [GitHub Issues](https://gitlink.org.cn/tuya/AegisRun/issues) 提交公开 Issue（因为我们没有精力维护私密报告流程）
-- **不提供安全公告邮件列表**。所有版本变更见 [CHANGELOG.md](../CHANGELOG.md)
-- **不保证向后兼容**。API 可能在版本间变化，升级前请查看变更日志
-
-## 出了问题怎么办
-
-我们最多能给的帮助是**审计日志**。每个通过 AegisRun 的工具调用都记录在 `aegisrun-audit.jsonl` 中：
+每个通过 AegisRun 的工具调用都记录在 `aegisrun-audit.jsonl` 中：
 
 ```jsonl
 {"timestamp":"1712345678","tool_id":"weather-query","action":"execute","decision":"DENY","reason":"evil.com in blacklist"}
 ```
 
-日志包含时间戳、工具ID、操作、决定（ALLOW/DENY）、原因。出了问题，导出一份日志发到 Issue，我们可以帮你分析拦截链路。
+日志包含时间戳、工具ID、操作、决定（ALLOW/DENY）、拒绝原因。遇到异常拦截或漏拦时：
 
-**我们不提供**：漏洞赏金、私密报告通道、CVE 编号申请、安全审计报告。
+1. 导出 `aegisrun-audit.jsonl` 中相关工具的日志条目
+2. 附上当前策略配置（`moon run src/main show` 或 `policy.json`）
+3. 提交到 [GitHub Issues](https://gitlink.org.cn/tuya/AegisRun/issues)，我们基于日志分析拦截链路
+
+版本变更记录见 [CHANGELOG.md](../CHANGELOG.md)。
