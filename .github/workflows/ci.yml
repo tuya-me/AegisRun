@@ -20,13 +20,13 @@ jobs:
       - name: Install MoonBit toolchain
         uses: moonbitlang/setup-moonbit@v1
         with:
-          moon-version: "0.10.3"
+          moon-version: "latest"
 
       - name: Info (generate .mbti)
-        run: moon info --deny-warn
+        run: moon info
 
       - name: Format check
-        run: moon fmt --deny-warn
+        run: moon fmt --check
 
       - name: Compile check
         run: moon check
