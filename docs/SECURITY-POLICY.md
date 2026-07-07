@@ -10,6 +10,36 @@ AegisRun 不是另一个杀毒软件。它的核心假设是：**AI Agent 调用
 2. **组合检测**：单独无害的能力组合起来可能危险（文件写入 + 网络 = 外泄风险）
 3. **纵深防御**：同一操作在 MoonBit 策略层和 Rust 沙箱层各检查一次，任一拒绝即拦截
 
+## 策略文件
+
+所有默认规则集中在一个文件里维护：
+
+```
+src/lib/defaults.mbt  ← 唯一维护点（v0.7.0 重构）
+  ├─ default_domain_blacklist()   → 7 条恶意域名
+  ├─ default_domain_suffixes()    → 3 条后缀 TLD
+  ├─ default_ip_prefixes()        → 3 条内网 IP 段
+  ├─ default_domain_whitelist()   → 2 条可信域名
+  ├─ default_sensitive_paths()    → 22 条敏感路径
+  ├─ default_env_patterns()       → 36 条环境变量模式
+  ├─ env_keywords()               → 5 个关键词（KEY/SECRET/TOKEN/PASSWORD/CREDENTIAL）
+  ├─ default_timeout_ms()         → 30000
+  └─ default_memory_kb()          → 262144
+```
+
+修改规则只改 `defaults.mbt`，不动 `core.mbt`。如需持久化编辑，通过 `policy.json` 或 Web 面板覆盖。
+
+### 策略在每层拦截中的调用链
+
+| 拦截层 | 入口文件 | 策略来源 | 策略函数 |
+|--------|----------|----------|----------|
+| 1. 安装审查 | `scorer.mbt:36` | 内置评分规则 | `score_manifest()` |
+| 2. 域名/IP | `core.mbt:54` ← `sandbox.mbt:78` | `defaults.mbt` → `default_domain_blacklist/suffixes/ip_prefixes` | `check_domain()` |
+| 3. 路径 | `core.mbt:97` ← `sandbox.mbt` + `lib.rs:83` | `defaults.mbt` → `default_sensitive_paths` | `check_path()` |
+| 3. 环境变量 | `core.mbt:120` ← `lib.rs:91` | `defaults.mbt` → `default_env_patterns/env_keywords` | `check_env()` |
+| 4. 工具黑名单 | `core.mbt:141` ← `aegisrun.mbt:192` | 运行时 `block()` 动态添加 | `check_tool_id()` |
+| 5. WASI 沙箱 | `sandbox.rs`（Rust）| 不依赖策略文件 | wasmtime 零目录预打开 |
+
 ## 规则数据来源
 
 AegisRun 的内置黑名单整合了多层次的公开威胁情报：
