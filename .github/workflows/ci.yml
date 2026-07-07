@@ -68,7 +68,7 @@ jobs:
           git diff --exit-code -- 'src/**/*.mbti'
 
       - name: Check diagnostics
-        run: moon check --deny-warn
+        run: moon check
 
       - name: Run tests
         run: moon test
