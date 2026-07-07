@@ -4,6 +4,7 @@
 
 ## v0.6.0 (2026-07-05) — 全面加固
 
+- 默认策略数据集中管理（`defaults.mbt`，修改规则只需改一个文件）
 - Rust CI 补全（cargo build + clippy + test）
 - 真 SHA256 签名验证（sha2 crate 替代伪实现）
 - Rust/MoonBit/YAML 三方策略对齐（30+ 规则统一，serde_yaml 解析 preset）
