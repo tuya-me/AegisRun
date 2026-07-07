@@ -1,6 +1,16 @@
-# Mark Rust runtime and Python scripts as vendored — core logic is MoonBit
+# Core language: MoonBit
+*.mbt linguist-detectable
+
+# Rust runtime is support layer
 runtime/** linguist-vendored
+
+# Config and docs — not core logic
 *.py linguist-vendored
 *.cmd linguist-vendored
 *.bat linguist-vendored
+*.html linguist-vendored
+*.yaml linguist-vendored
+*.json linguist-vendored
+*.sh linguist-vendored
 presets/** linguist-vendored
+docs/** linguist-vendored
