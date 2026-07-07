@@ -28,17 +28,29 @@ fn info(msg : String) -> Unit {
 
 ///|
 pub fn demo1() -> Unit {
-  hr("Demo 1: Install Third-Party Tool — Permission Review")
+  hr("Demo 1: Install Third-Party Tool — Permission Review (scorer 实际调用)")
   println("  Tool: weather-query v1.2.0")
   println("  Author: @third-party-dev (first release)")
   println("  Declared: network=[wttr.in] timeout=5000ms memory=128KB")
-  println("  Result:")
-  ok("Domain wttr.in not in blacklist")
-  ok("No filesystem access requested")
-  ok("No env vars requested")
-  ok("Timeout/memory within limits")
+
+  // v0.7.0: 真正调用 scorer 评分
+  let report = @lib.score_manifest(
+    "weather-query", "@third-party-dev", true,
+    ["wttr.in"], [], [], [], 5000, 128000,
+  )
+  let level_str = match report.level {
+    Safe => "GREEN"
+    Warning => "YELLOW"
+    Dangerous => "ORANGE"
+    Critical => "RED"
+  }
+  println("  Result: " + report.score.to_string() + "/100 [" + level_str + "]")
+  println("  Checks: " + report.total_checks.to_string() + " dimensions evaluated")
+  for d in report.deductions {
+    println("    [" + d.severity + "] -" + d.points.to_string() + " " + d.category + ": " + d.reason)
+  }
   println("")
-  ok("PASS — Risk score: 92/100 — Safe to install")
+  println("  Recommendation: " + report.recommendation)
 }
 
 ///|

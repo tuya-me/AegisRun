@@ -220,13 +220,23 @@ pub fn Sandbox::sandbox_file_open(
 pub fn Sandbox::sandbox_getenv(
   self : Sandbox,
   varname : String,
+  tool_id : String,
+  session_id : String,
 ) -> Result[String, String] {
   self.checked_count = self.checked_count + 1
+
+  // 第〇关：并发限流
+  match self.limiter.acquire(tool_id, session_id) {
+    Ok(_) => ()
+    Err(e) => { self.blocked_count = self.blocked_count + 1; return Err("LIMITER: " + e) }
+  }
 
   // 第一关：黑名单检查
   match check_env(self.policy.sensitive_envs, varname) {
     Deny => {
       self.blocked_count = self.blocked_count + 1
+      self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+      self.alert_mgr.send_alert(Warning, "Env Blocked", varname + " is sensitive")
       return Err(
         "BLOCKED: env var '" +
         varname +
@@ -307,6 +317,38 @@ pub fn Sandbox::sandbox_check_memory(
 }
 
 // ═══════════════════════════════════════════
+// 拦截器 5: SQL 查询（v0.7.0 真正接入 sql_guard）
+// ═══════════════════════════════════════════
+
+///|
+pub fn Sandbox::sandbox_sql_query(
+  self : Sandbox,
+  sql : String,
+  tool_id : String,
+  session_id : String,
+) -> Result[String, String] {
+  self.checked_count = self.checked_count + 1
+
+  // 第〇关：并发限流
+  match self.limiter.acquire(tool_id, session_id) {
+    Ok(_) => ()
+    Err(e) => { self.blocked_count = self.blocked_count + 1; return Err("LIMITER: " + e) }
+  }
+
+  // SQL 安全检查
+  let conn = default_sql_connection()
+  match conn.guard_query(sql) {
+    Ok(_) => Ok("[sandbox] SQL → ALLOWED")
+    Err(e) => {
+      self.blocked_count = self.blocked_count + 1
+      self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+      self.alert_mgr.send_alert(Warning, "SQL Blocked", e)
+      return Err("BLOCKED: SQL — " + e)
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
 // 沙箱统计
 // ═══════════════════════════════════════════
 
@@ -321,7 +363,8 @@ pub fn Sandbox::sandbox_stats(self : Sandbox) -> String {
   allowed.to_string() +
   " allowed, " +
   blocked.to_string() +
-  " blocked"
+  " blocked | " +
+  self.limiter.limiter_stats()
 }
 
 // ═══════════════════════════════════════════
