@@ -19,9 +19,8 @@ jobs:
 
       - name: Install MoonBit (Linux)
         run: |
-          curl -fsSL https://cli.moonbitlang.com/moon/x86_64-unknown-linux-gnu/latest/moon -o moon
-          chmod +x moon
-          echo "$PWD" >> $GITHUB_PATH
+          curl -fsSL https://cli.moonbitlang.com/install.sh | bash -s -- --yes
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Info (generate .mbti)
         run: moon info
