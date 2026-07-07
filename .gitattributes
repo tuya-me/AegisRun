@@ -1,2 +1,0 @@
-# Rust runtime is OS-level intercept layer, not core MoonBit logic
-runtime/** linguist-vendored
