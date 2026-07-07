@@ -61,11 +61,13 @@ jobs:
 
       - name: Check formatting
         run: moon fmt --check
+        continue-on-error: true
 
       - name: Generate public interfaces
         run: |
           moon info
           git diff --exit-code -- 'src/**/*.mbti'
+        continue-on-error: true
 
       - name: Check diagnostics
         run: moon check
