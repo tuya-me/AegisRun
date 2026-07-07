@@ -7,6 +7,8 @@ runtime/target/
 *.mbti
 *.bak
 
+.gitcredentials
+
 # ponytail: prevent credential leaks
 .env
 .env.*
