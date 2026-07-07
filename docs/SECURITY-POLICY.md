@@ -56,7 +56,7 @@ AegisRun 的设计参考了以下项目与论文：
 - Microsoft CFP 2024: _"ToolSandbox: Stateful Execution Monitoring for LLM Agents"_ — 学术上验证了「AI Agent 工具需要状态机级别的安全拦截」
 - [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/) — LLM06（过度代理）和 LLM08（向量和嵌入）启发了我们的工具权限门控
 
-## 问题排查
+## 审计与排查
 
 每个通过 AegisRun 的工具调用都记录在 `aegisrun-audit.jsonl` 中：
 
@@ -66,8 +66,16 @@ AegisRun 的设计参考了以下项目与论文：
 
 日志包含时间戳、工具ID、操作、决定（ALLOW/DENY）、拒绝原因。遇到异常拦截或漏拦时：
 
-1. 导出 `aegisrun-audit.jsonl` 中相关工具的日志条目
-2. 附上当前策略配置（`moon run src/main show` 或 `policy.json`）
-3. 提交到 [GitHub Issues](https://gitlink.org.cn/tuya/AegisRun/issues)，我们基于日志分析拦截链路
+```bash
+# 1. 导出相关工具的日志
+grep "weather-query" aegisrun-audit.jsonl
 
-版本变更记录见 [CHANGELOG.md](../CHANGELOG.md)。
+# 2. 查看当前策略
+moon run src/main show
+:: 或
+type policy.json
+
+# 3. 按日志中的 reason 定位是哪个规则触发，自行调整策略后 moon run src/main 验证
+```
+
+日志和策略配置足以自行定位绝大部份拦截问题。版本变更记录见 [CHANGELOG.md](../CHANGELOG.md)。
