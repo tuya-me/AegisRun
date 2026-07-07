@@ -39,16 +39,14 @@ cd D:\moonbit\aegisrun
 # 新手一键菜单
 quickstart.cmd
 
-# 拦截演示（14/14 拦截率）
-set AEGISRUN_ATTACKS=all
-moon run src/demo/intercept.mbt
+# MoonBit CLI：拦截演示 + 策略管理
+moon run src/main
 
-# 恶意脚本生成器（12 种攻击可选）
-moon run src/generator/generator.mbt
-
-# Rust CLI 演示
-aegisrun.exe demo
-aegisrun.exe scan malware.py
+# Rust CLI：WASI 沙箱 + 审计 + Web 面板
+cd runtime
+cargo run -- demo
+cargo run -- scan malware.py
+cargo run -- serve
 ```
 
 ---
@@ -76,13 +74,14 @@ scan_script(&source);             // → 返回违规列表
 
 | 命令 | 效果 |
 |------|------|
-| `aegisrun.exe demo` | 策略引擎演示（14项） |
-| `aegisrun.exe scan malware.py` | 扫描脚本找威胁 |
-| `aegisrun.exe sandbox tool.wasm` | WASI 物理隔离沙箱 |
-| `aegisrun.exe serve` | Web 管理面板（9090端口） |
-| `aegisrun.exe audit` | 审计日志 JSONL 写盘 |
-| `aegisrun.exe verify tool.wasm id pub` | 工具签名验证 |
-| `aegisrun.exe policy show` | 查看当前策略 |
+| `moon run src/main` | MoonBit 策略引擎 + 拦截演示 |
+| `cargo run -- demo` | Rust 策略引擎演示（14项） |
+| `cargo run -- scan malware.py` | 扫描脚本找威胁 |
+| `cargo run -- sandbox tool.wasm` | WASI 物理隔离沙箱 |
+| `cargo run -- serve` | Web 管理面板（9090端口） |
+| `cargo run -- audit` | 审计日志 JSONL 写盘 |
+| `cargo run -- verify tool.wasm id pub` | 工具签名验证 |
+| `cargo run -- policy show` | 查看当前策略 |
 
 ### WASI 物理隔离沙箱
 
@@ -92,7 +91,7 @@ cd runtime\tools\evil_plugin
 cargo build --target wasm32-wasip1 --release
 
 :: 沙箱执行——工具物理上无法访问任何文件/密钥
-aegisrun.exe sandbox target\wasm32-wasip1\release\evil-plugin.wasm
+cargo run -- sandbox target\wasm32-wasip1\release\evil-plugin.wasm
 ```
 
 输出：
@@ -106,7 +105,7 @@ aegisrun.exe sandbox target\wasm32-wasip1\release\evil-plugin.wasm
 ### Web 管理面板
 
 ```cmd
-aegisrun.exe serve                  # 启动 Web 面板
+cargo run -- serve                  # 启动 Web 面板
 start dashboard.html                # 或双击打开
 :: 浏览器 → http://localhost:9090
 :: 网页改策略 → 点"复制CLI命令" → 粘贴到CMD → 同步到库
@@ -160,7 +159,7 @@ aegisrun/
 │
 ├── runtime/                  Rust 库 + CLI（~900 行）
 │   ├── src/lib.rs              核心库（Policy + sandbox + scanner）
-│   ├── src/main.rs             CLI 工具（aegisrun.exe）
+│   ├── src/main.rs             CLI 工具（cargo run --）
 │   ├── src/sandbox.rs          wasmtime WASI 物理隔离沙箱
 │   ├── src/server.rs           Web 面板 + MCP 端点
 │   ├── src/persist.rs          审计日志 + 策略持久化 + 热加载
