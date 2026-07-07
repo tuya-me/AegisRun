@@ -37,7 +37,7 @@
 - MoonBit: moon check + moon fmt --check 0 警告
 - Rust: cargo clippy 0 警告
 - 恶意 .wasm 工具 evil-plugin 27/27 拦截验证
-- 文档全面更新（ROADMAP、CHANGELOG、CONTRIBUTING、使用指南）
+- 文档全面更新（CHANGELOG、CONTRIBUTING、使用指南）
 
 ---
 
@@ -173,7 +173,6 @@
 **文档**
 - `README.md` — 项目说明（简体中文）
 - `ARCHITECTURE.md` — 架构文档（完整调用链）
-- `ROADMAP.md` — v1.1 → v2.0 路线图
 - `policy.example.yaml` — 策略配置示例
 
 ### 技术指标

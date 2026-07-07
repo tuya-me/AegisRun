@@ -190,7 +190,6 @@ aegisrun/
 ## 相关文档
 
 - [GUIDE.md](GUIDE.md) — 新手指南（3 分钟上手 + 常见坑）
-- [ROADMAP.md](ROADMAP.md) — 路线图（v1.1 → v2.0）
 - [CHANGELOG.md](CHANGELOG.md) — 更新日志（版本变更记录）
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构文档（完整调用链 + 数据结构）
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — 开发者指南（贡献方向 + 代码规范）

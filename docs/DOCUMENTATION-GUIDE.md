@@ -14,7 +14,6 @@
 D:\moonbit\aegisrun\
 ├── README.md                    ← 项目首页（简体中文，含快速开始+调用方式）
 ├── CHANGELOG.md                 ← 版本更新日志
-├── ROADMAP.md                   ← 路线图 v1.1 → v2.0
 ├── policy.example.yaml          ← 策略配置示例
 ├── presets/                     ← 安全预设模板
 │   ├── strict.yaml
@@ -69,7 +68,6 @@ D:\moonbit\md\
 |------|------|------|
 | 项目首页 | `README.md` | `README.md` |
 | 变更日志 | `CHANGELOG.md` | `CHANGELOG.md` |
-| 路线图 | `ROADMAP.md` | `ROADMAP.md` |
 | 架构文档 | `docs/ARCHITECTURE.md` | `docs/ARCHITECTURE.md` |
 | 安全策略 | `docs/SECURITY-POLICY.md` | `docs/SECURITY-POLICY.md` |
 | 参赛方案 | `md/01-参赛方案.md` | `md/01-参赛方案.md` |
@@ -84,7 +82,6 @@ D:\moonbit\md\
 |------|------|:--:|------|:--:|
 | README | aegisrun/ | ✅ | 项目说明+快速开始+调用方式 | 2026-07-05 |
 | GUIDE | aegisrun/ | ✅ | 新手指南 | ✅ |
-| ROADMAP | aegisrun/ | ✅ | v1.1→v2.0 路线图 | ✅ 已更新 |
 | CHANGELOG | aegisrun/ | ✅ | v0.1.0~v0.5.0 变更 | ✅ 已更新 |
 | ARCHITECTURE | aegisrun/docs/ | ✅ | 完整调用链+数据结构 | ✅ 已更新 |
 | CONTRIBUTING | aegisrun/docs/ | ✅ | 开发者指南+贡献方向 | ✅ 已标注完成项 |

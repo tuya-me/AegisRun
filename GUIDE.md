@@ -150,7 +150,6 @@ aegisrun/
 ├── docs/                 ← 公开文档
 │   ├── ARCHITECTURE.md   ← 架构+完整调用链
 │   └── DOCUMENTATION-GUIDE.md ← 文档规范
-├── ROADMAP.md            ← 路线图
 └── CHANGELOG.md          ← 版本日志
 ```
 
