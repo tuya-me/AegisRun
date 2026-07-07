@@ -117,14 +117,24 @@ pub fn SqlConnection::guard_query(
   }
 }
 
-///| v0.7.0: 默认 SQL 连接（sandbox 集成用）
+///|
+/// v0.7.0: 默认 SQL 连接（sandbox 集成用）
 pub fn default_sql_connection() -> SqlConnection {
   let conn = new_sql_connection("default-db", ":memory:")
   conn.add_table(
-    make_sql_rule("users", ["SELECT", "INSERT", "UPDATE"], ["id", "name", "email"], 1000, true, []),
+    make_sql_rule(
+      "users",
+      ["SELECT", "INSERT", "UPDATE"],
+      ["id", "name", "email"],
+      1000,
+      true,
+      [],
+    ),
   )
   conn.add_table(
-    make_sql_rule("secrets", ["SELECT"], ["id", "key_name"], 10, true, ["DROP", "ALTER", "TRUNCATE"]),
+    make_sql_rule("secrets", ["SELECT"], ["id", "key_name"], 10, true, [
+      "DROP", "ALTER", "TRUNCATE",
+    ]),
   )
   conn
 }

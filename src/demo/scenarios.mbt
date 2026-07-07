@@ -28,15 +28,24 @@ fn info(msg : String) -> Unit {
 
 ///|
 pub fn demo1() -> Unit {
-  hr("Demo 1: Install Third-Party Tool — Permission Review (scorer 实际调用)")
+  hr(
+    "Demo 1: Install Third-Party Tool — Permission Review (scorer 实际调用)",
+  )
   println("  Tool: weather-query v1.2.0")
   println("  Author: @third-party-dev (first release)")
   println("  Declared: network=[wttr.in] timeout=5000ms memory=128KB")
 
   // v0.7.0: 真正调用 scorer 评分
   let report = @lib.score_manifest(
-    "weather-query", "@third-party-dev", true,
-    ["wttr.in"], [], [], [], 5000, 128000,
+    "weather-query",
+    "@third-party-dev",
+    true,
+    ["wttr.in"],
+    [],
+    [],
+    [],
+    5000,
+    128000,
   )
   let level_str = match report.level {
     Safe => "GREEN"
@@ -45,9 +54,20 @@ pub fn demo1() -> Unit {
     Critical => "RED"
   }
   println("  Result: " + report.score.to_string() + "/100 [" + level_str + "]")
-  println("  Checks: " + report.total_checks.to_string() + " dimensions evaluated")
+  println(
+    "  Checks: " + report.total_checks.to_string() + " dimensions evaluated",
+  )
   for d in report.deductions {
-    println("    [" + d.severity + "] -" + d.points.to_string() + " " + d.category + ": " + d.reason)
+    println(
+      "    [" +
+      d.severity +
+      "] -" +
+      d.points.to_string() +
+      " " +
+      d.category +
+      ": " +
+      d.reason,
+    )
   }
   println("")
   println("  Recommendation: " + report.recommendation)

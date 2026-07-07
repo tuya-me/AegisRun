@@ -45,13 +45,19 @@ pub fn new_sandbox(policy : PolicyState, grant : SandboxGrant) -> Sandbox {
   }
 }
 
-///| 获取沙箱统计（含限流/监控/告警）
+///|
+/// 获取沙箱统计（含限流/监控/告警）
 pub fn Sandbox::stats(self : Sandbox) -> String {
-  "Sandbox: checked=" + self.checked_count.to_string() +
-  " blocked=" + self.blocked_count.to_string() +
-  " | " + self.limiter.limiter_stats() +
-  " | " + self.monitor.monitor_dashboard() +
-  " | " + self.alert_mgr.alert_stats()
+  "Sandbox: checked=" +
+  self.checked_count.to_string() +
+  " blocked=" +
+  self.blocked_count.to_string() +
+  " | " +
+  self.limiter.limiter_stats() +
+  " | " +
+  self.monitor.monitor_dashboard() +
+  " | " +
+  self.alert_mgr.alert_stats()
 }
 
 // ── 默认授权（演示用）──
@@ -111,7 +117,11 @@ pub fn Sandbox::sandbox_http_request(
     Deny => {
       self.blocked_count = self.blocked_count + 1
       self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
-      self.alert_mgr.send_alert(Warning, "Domain Blocked", domain + " in blacklist")
+      self.alert_mgr.send_alert(
+        Warning,
+        "Domain Blocked",
+        domain + " in blacklist",
+      )
       return Err("BLOCKED: domain '" + domain + "' is blacklisted")
     }
     Allow => ()
@@ -135,7 +145,11 @@ pub fn Sandbox::sandbox_http_request(
   if !granted {
     self.blocked_count = self.blocked_count + 1
     self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
-    self.alert_mgr.send_alert(Warning, "Unauthorized Domain", domain + " not in grant")
+    self.alert_mgr.send_alert(
+      Warning,
+      "Unauthorized Domain",
+      domain + " not in grant",
+    )
     return Err(
       "BLOCKED: domain '" +
       domain +
@@ -166,7 +180,10 @@ pub fn Sandbox::sandbox_file_open(
   // 第〇关：并发限流
   match self.limiter.acquire(tool_id, session_id) {
     Ok(_) => ()
-    Err(e) => { self.blocked_count = self.blocked_count + 1; return Err("LIMITER: " + e) }
+    Err(e) => {
+      self.blocked_count = self.blocked_count + 1
+      return Err("LIMITER: " + e)
+    }
   }
 
   // 第一关：黑名单检查
@@ -179,7 +196,11 @@ pub fn Sandbox::sandbox_file_open(
     Deny => {
       self.blocked_count = self.blocked_count + 1
       self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
-      self.alert_mgr.send_alert(Warning, "Path Blocked", path + " is blacklisted")
+      self.alert_mgr.send_alert(
+        Warning,
+        "Path Blocked",
+        path + " is blacklisted",
+      )
       return Err("BLOCKED: path '" + path + "' is blacklisted")
     }
     Allow => ()
@@ -228,7 +249,10 @@ pub fn Sandbox::sandbox_getenv(
   // 第〇关：并发限流
   match self.limiter.acquire(tool_id, session_id) {
     Ok(_) => ()
-    Err(e) => { self.blocked_count = self.blocked_count + 1; return Err("LIMITER: " + e) }
+    Err(e) => {
+      self.blocked_count = self.blocked_count + 1
+      return Err("LIMITER: " + e)
+    }
   }
 
   // 第一关：黑名单检查
@@ -236,7 +260,11 @@ pub fn Sandbox::sandbox_getenv(
     Deny => {
       self.blocked_count = self.blocked_count + 1
       self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
-      self.alert_mgr.send_alert(Warning, "Env Blocked", varname + " is sensitive")
+      self.alert_mgr.send_alert(
+        Warning,
+        "Env Blocked",
+        varname + " is sensitive",
+      )
       return Err(
         "BLOCKED: env var '" +
         varname +
@@ -332,7 +360,10 @@ pub fn Sandbox::sandbox_sql_query(
   // 第〇关：并发限流
   match self.limiter.acquire(tool_id, session_id) {
     Ok(_) => ()
-    Err(e) => { self.blocked_count = self.blocked_count + 1; return Err("LIMITER: " + e) }
+    Err(e) => {
+      self.blocked_count = self.blocked_count + 1
+      return Err("LIMITER: " + e)
+    }
   }
 
   // SQL 安全检查
