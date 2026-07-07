@@ -6,30 +6,71 @@ on:
   pull_request:
     branches: [master, main, clean-v2]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  moonbit-checks:
-    name: MoonBit (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+  moonbit:
+    name: MoonBit (${{ matrix.target }})
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-14]
+        target: [wasm, wasm-gc]
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up MoonBit
-        uses: ./.github/actions/setup-moonbit
+      - name: Install MoonBit CLI
+        shell: bash
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
-      - name: Info (generate .mbti)
-        run: moon info
+      - name: Show MoonBit version
+        run: moon version
 
-      - name: Format check
+      - name: Update registry index
+        run: moon update
+
+      - name: Check diagnostics
+        run: moon check --deny-warn --target ${{ matrix.target }}
+
+      - name: Run tests
+        run: moon test --target ${{ matrix.target }}
+
+  release-gates:
+    name: Release gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit CLI
+        shell: bash
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Update registry index
+        run: moon update
+
+      - name: Check formatting
         run: moon fmt --check
 
-      - name: Compile check
-        run: moon check
+      - name: Generate public interfaces
+        run: |
+          moon info
+          git diff --exit-code -- 'src/**/*.mbti'
 
-      - name: Test
+      - name: Check diagnostics
+        run: moon check --deny-warn
+
+      - name: Run tests
         run: moon test
 
   rust-checks:
@@ -39,7 +80,7 @@ jobs:
       run:
         working-directory: runtime
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
