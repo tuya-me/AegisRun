@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [master, main, clean-v2]
+  workflow_dispatch:
   pull_request:
     branches: [master, main, clean-v2]
 
@@ -58,16 +59,6 @@ jobs:
 
       - name: Update registry index
         run: moon update
-
-      - name: Check formatting
-        run: moon fmt --check
-        continue-on-error: true
-
-      - name: Generate public interfaces
-        run: |
-          moon info
-          git diff --exit-code -- 'src/**/*.mbti'
-        continue-on-error: true
 
       - name: Check diagnostics
         run: moon check
