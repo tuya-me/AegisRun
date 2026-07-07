@@ -8,8 +8,11 @@ on:
 
 jobs:
   moonbit-checks:
-    name: MoonBit Quality Checks
-    runs-on: ubuntu-latest
+    name: MoonBit (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,7 +20,7 @@ jobs:
       - name: Install MoonBit toolchain
         uses: moonbitlang/setup-moonbit@v1
         with:
-          moon-version: "0.6.10"
+          moon-version: "0.10.3"
 
       - name: Module info
         run: moon info
@@ -35,7 +38,7 @@ jobs:
         run: moon test
 
   rust-checks:
-    name: Rust Quality Checks
+    name: Rust Checks
     runs-on: ubuntu-latest
     defaults:
       run:
