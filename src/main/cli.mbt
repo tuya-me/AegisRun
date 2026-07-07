@@ -9,7 +9,7 @@ fn print_banner() -> Unit {
   println(
     "  ╔══════════════════════════════════════════════════════╗",
   )
-  println("  ║   AegisRun Lite v0.6.0                              ║")
+  println("  ║   AegisRun Lite v0.8.0                              ║")
   println("  ║   AI Agent Secure Tool Runtime — MoonBit + Wasm     ║")
   println(
     "  ╚══════════════════════════════════════════════════════╝",
@@ -27,13 +27,18 @@ fn print_help() -> Unit {
   println("    aegisrun deny tool <tool-id>")
   println("    aegisrun show")
   println("    aegisrun demo [1-7|all]")
-  println("    aegisrun serve          (MCP mode — coming soon)")
+  println("    aegisrun serve          MCP server (Rust runtime)")
+  println("    aegisrun sync           Sync policy from env var")
+  println("")
+  println("  MCP SERVER:")
+  println("    cd runtime && cargo run -- serve")
+  println("    MoonBit 编译为 Wasm，无 TCP 能力，MCP 在 Rust 侧")
   println("")
   println("  WEB PANEL SYNC:")
   println("    1. moon run src/main web           (opens dashboard.html)")
   println("    2. Edit policy in browser")
   println("    3. Click 'Copy CLI commands'")
-  println("    4. Paste and run in terminal")
+  println("    4. moon run src/main sync          (load env var)")
   println("")
   println("  EXAMPLES:")
   println("    aegisrun web")
@@ -135,8 +140,27 @@ fn handle_command(args : Array[String], policy : @lib.PolicyState) -> Unit {
       println("")
     }
     "serve" => {
-      println("  Starting AegisRun MCP Server (coming in next release)...")
-      println("  Policy: " + policy.preset_name)
+      println("  AegisRun MCP Server — Rust 运行时")
+      println("  MoonBit 编译为 Wasm，无 TCP 能力，MCP 需在 Rust 侧运行")
+      println("")
+      println("  启动 MCP 服务：")
+      println("    cd runtime && cargo run -- serve")
+      println("")
+      println("  Agent 配置 MCP 端点：")
+      println("  MCP 配置：{ \"mcpServers\": { \"aegisrun\": { \"url\": \"http://localhost:9090/mcp\" } } }")
+    }
+    "sync" => {
+      println("  Syncing policy from environment variable...")
+      let patch = match @env.get_env_var("AEGISRUN_POLICY") {
+        Some(v) => v
+        None => ""
+      }
+      if patch != "" {
+        @lib.load_policy_patch(policy, patch)
+        println("  [OK] Policy loaded from AEGISRUN_POLICY: " + patch)
+      } else {
+        println("  [INFO] AEGISRUN_POLICY not set, current policy unchanged")
+      }
     }
     _ => print_help()
   }

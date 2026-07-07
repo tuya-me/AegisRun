@@ -7,12 +7,13 @@
 
 ///|
 pub struct SandboxGrant {
-  allowed_domains : Array[String] // 精确域名白名单
-  allowed_paths : Array[String] // 路径白名单
-  allowed_env_vars : Array[String] // 环境变量白名单
-  max_timeout_ms : Int // 超时上限
-  max_memory_kb : Int // 内存上限
-  max_file_size_kb : Int // 单文件大小上限
+  allowed_domains : Array[String]
+  allowed_paths : Array[String]
+  allowed_env_vars : Array[String]
+  min_score : Int // v0.8.0: scorer 预检，< 此值直接拒绝
+  max_timeout_ms : Int
+  max_memory_kb : Int
+  max_file_size_kb : Int
 }
 
 // 沙箱实例 —— 每个工具实例一个
@@ -22,9 +23,10 @@ pub struct Sandbox {
   policy : PolicyState
   grant : SandboxGrant
   ip_bl : IpBlacklist
-  limiter : ConcurrencyLimiter // ponytail: v0.7.0 真正接入
+  limiter : ConcurrencyLimiter
   monitor : PressureMonitor
   alert_mgr : AlertManager
+  sql_conn : SqlConnection // v0.8.0: 复用，不再每次新建
   mut checked_count : Int
   mut blocked_count : Int
 }
@@ -40,6 +42,12 @@ pub fn new_sandbox(policy : PolicyState, grant : SandboxGrant) -> Sandbox {
     limiter: default_limiter(),
     monitor: default_monitor(),
     alert_mgr: new_alert_manager(default_alert_config()),
+    sql_conn: {
+      let conn = new_sql_connection("default-db", ":memory:")
+      conn.add_table(make_sql_rule("users", ["SELECT", "INSERT", "UPDATE"], ["id", "name", "email"], 1000, true, []))
+      conn.add_table(make_sql_rule("secrets", ["SELECT"], ["id", "key_name"], 10, true, ["DROP", "ALTER", "TRUNCATE"]))
+      conn
+    },
     checked_count: 0,
     blocked_count: 0,
   }
@@ -68,6 +76,7 @@ pub fn default_grant() -> SandboxGrant {
     allowed_domains: ["wttr.in", "api.github.com"],
     allowed_paths: ["/tmp/reports/", "/tmp/logs/"],
     allowed_env_vars: ["USER", "LANG", "HOME"],
+    min_score: 0,
     max_timeout_ms: 30000,
     max_memory_kb: 262144,
     max_file_size_kb: 10240,
@@ -103,6 +112,15 @@ pub fn Sandbox::sandbox_http_request(
       self.blocked_count = self.blocked_count + 1
       self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
       return Err("LIMITER: " + e)
+    }
+  }
+
+  // 第〇关+：评分预检（v0.8.0）
+  if self.grant.min_score > 0 {
+    let report = score_manifest(tool_id, "unknown", true, [domain], [], [], [], 30000, 262144)
+    if report.score < self.grant.min_score {
+      self.blocked_count = self.blocked_count + 1
+      return Err("SCORE: " + report.score.to_string() + " < min_score=" + self.grant.min_score.to_string())
     }
   }
 
@@ -366,9 +384,8 @@ pub fn Sandbox::sandbox_sql_query(
     }
   }
 
-  // SQL 安全检查
-  let conn = default_sql_connection()
-  match conn.guard_query(sql) {
+  // SQL 安全检查（v0.8.0: 复用沙箱内连接，不再每次新建）
+  match self.sql_conn.guard_query(sql) {
     Ok(_) => Ok("[sandbox] SQL → ALLOWED")
     Err(e) => {
       self.blocked_count = self.blocked_count + 1

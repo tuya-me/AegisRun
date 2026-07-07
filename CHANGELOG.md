@@ -27,7 +27,18 @@
 - 版本号全局统一至 0.6.0（moon.mod / Cargo.toml / cli.mbt / dashboard.html / lib.rs / main.rs）
 - 文档更新：CONTRIBUTING、使用指南、新建 SECURITY-POLICY.md，删除过时 WASMTIME_INTEGRATION.md
 
-## v0.5.0 (2026-07-05) — 统一门面 + 策略补强 + CI 完善
+## v0.7.0 (2026-07-08) — 消除架构二重性 + 全面加固
+
+- **架构二重性消除**：删 `defaults.mbt`、删重复 `scanner.rs`、策略数据集中到 `core.mbt`
+- **五层调用链全部通电**：limiter/monitor/alert/sql_guard/scorer 真正在 sandbox 拦截链中被调用
+- **scorer 预检**：`sandbox_http_request` 可选评分预拦截，`min_score` 字段控制
+- **SQL 连接复用**：Sandbox 结构体整合 `sql_conn`，不再每次查询新建
+- **仪表盘接入**：`stats()` 含限流/监控/告警状态
+- **MoonBit CLI 诚实化**：`serve` 不再说 "coming soon"，如实说明 MCP 在 Rust 侧；新增 `sync` 命令
+- **MoonBit 代码量**：~3580 行（+220），Rust 代码量：~1073 行（-115）
+- 更多细节见 [v0.7.0+ 提交记录](https://github.com/tuya-me/AegisRun/commits/clean-v2)
+
+## v0.6.0 (2026-07-05) — 全面加固
 
 - 统一门面 `AegisRun::new("standard")`：一行 API 替代旧的四行调用，内置 HashMap 缓存
 - 审计日志 JSONL 持久化（AuditLogger，50条批量刷盘）

@@ -147,9 +147,76 @@ pub fn check_tool_id(
   }
 }
 
-// ── Policy Engine ──
+// ═══════════════════════════════════════════
+// 默认策略数据（唯一维护点）
+// v0.8.0: 从 defaults.mbt 合并至此，删除重复
+// ═══════════════════════════════════════════
 
-// ponytail: 默认策略数据已迁移到 defaults.mbt，此处不再维护硬编码
+///|
+pub fn default_domain_blacklist() -> Array[(String, String)] {
+  [("evil.com", "known-malware-c2"), ("stealer.cc", "data-exfil-host"),
+  ("192.168.*", "internal-network"), ("10.*", "private-network"),
+  ("172.16.*", "private-network"), ("127.0.0.1", "loopback"),
+  ("localhost", "loopback")]
+}
+
+///|
+pub fn default_domain_suffixes() -> Array[String] {
+  ["*.cn", "*.ru", "*.tk"]
+}
+
+///|
+pub fn default_ip_prefixes() -> Array[String] {
+  ["10.", "172.", "192.168."]
+}
+
+///|
+pub fn default_domain_whitelist() -> Array[(String, String)] {
+  [("api.github.com", "GitHub-API"), ("wttr.in", "weather-API")]
+}
+
+///|
+pub fn default_sensitive_paths() -> Array[String] {
+  [
+    "/etc/passwd", "/etc/shadow", "/etc/ssl/private/", "/var/run/secrets/",
+    "/proc/self/environ", "/root/.bash_history", "/var/log/auth.log",
+     "~/.ssh/", "~/.aws/", "~/.gnupg/", "~/.kube/config",
+     "~/Library/Keychains/", "~/Library/Application Support/Google/Chrome/",
+    "~/Library/Application Support/Firefox/",
+     "C:\\Windows\\System32\\config\\", "C:\\Users\\*\\.kube\\config",
+    "C:\\Users\\*\\AppData\\Roaming\\npm\\npmrc",
+    "C:\\ProgramData\\Docker\\config.json",
+     ".pem", ".key", ".env", "config.yaml",
+  ]
+}
+
+///|
+pub fn default_env_patterns() -> Array[String] {
+  ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "COHERE_API_KEY", "DEEPSEEK_API_KEY",
+  "GOOGLE_AI_API_KEY",
+   "AWS_SECRET", "AWS_ACCESS_KEY", "GCP_", "AZURE_", "ALIBABA_CLOUD",
+  "TENCENT_CLOUD", "HUAWEI_CLOUD",
+   "DATABASE_URL", "REDIS_URL", "MONGODB_URI", "RABBITMQ_URL", "POSTGRES_",
+  "MYSQL_",
+   "GITHUB_TOKEN", "GITLAB_TOKEN", "BITBUCKET_", "CIRCLECI_", "JENKINS_",
+  "TRAVIS_",
+   "SENDGRID_API", "TWILIO_", "STRIPE_", "SLACK_TOKEN", "SLACK_WEBHOOK",
+  "NOTION_TOKEN",
+   "DOCKER_PASSWORD", "DOCKER_AUTH", "KUBECONFIG", "KUBE_",
+   "PRIVATE_KEY", "SSL_KEY", "CERTIFICATE", "PGP_", "GPG_", "NPM_TOKEN",
+  "PYPI_TOKEN"]
+}
+
+///|
+pub fn env_keywords() -> Array[String] {
+  ["KEY", "SECRET", "TOKEN", "PASSWORD", "CREDENTIAL"]
+}
+
+///|
+pub fn default_timeout_ms() -> Int { 30000 }
+
+///|
+pub fn default_memory_kb() -> Int { 262144 }
 
 ///|
 pub fn new_policy_engine() -> PolicyState {
