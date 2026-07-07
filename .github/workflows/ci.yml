@@ -20,7 +20,7 @@ jobs:
       - name: Install MoonBit toolchain
         uses: moonbitlang/setup-moonbit@v1
         with:
-          moon-version: "latest"
+          moon-version: "0.10.3"
 
       - name: Info (generate .mbti)
         run: moon info
