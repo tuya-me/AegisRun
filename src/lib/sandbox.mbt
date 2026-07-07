@@ -22,6 +22,9 @@ pub struct Sandbox {
   policy : PolicyState
   grant : SandboxGrant
   ip_bl : IpBlacklist
+  limiter : ConcurrencyLimiter // ponytail: v0.7.0 真正接入
+  monitor : PressureMonitor
+  alert_mgr : AlertManager
   mut checked_count : Int
   mut blocked_count : Int
 }
@@ -34,9 +37,21 @@ pub fn new_sandbox(policy : PolicyState, grant : SandboxGrant) -> Sandbox {
     policy,
     grant,
     ip_bl: new_ip_blacklist(),
+    limiter: default_limiter(),
+    monitor: default_monitor(),
+    alert_mgr: new_alert_manager(default_alert_config()),
     checked_count: 0,
     blocked_count: 0,
   }
+}
+
+///| 获取沙箱统计（含限流/监控/告警）
+pub fn Sandbox::stats(self : Sandbox) -> String {
+  "Sandbox: checked=" + self.checked_count.to_string() +
+  " blocked=" + self.blocked_count.to_string() +
+  " | " + self.limiter.limiter_stats() +
+  " | " + self.monitor.monitor_dashboard() +
+  " | " + self.alert_mgr.alert_stats()
 }
 
 // ── 默认授权（演示用）──
@@ -69,9 +84,21 @@ pub fn standard_sandbox() -> Sandbox {
 pub fn Sandbox::sandbox_http_request(
   self : Sandbox,
   url : String,
+  tool_id : String,
+  session_id : String,
 ) -> Result[String, String] {
   self.checked_count = self.checked_count + 1
   let domain = extract_host(url)
+
+  // 第〇关：并发限流
+  match self.limiter.acquire(tool_id, session_id) {
+    Ok(_) => ()
+    Err(e) => {
+      self.blocked_count = self.blocked_count + 1
+      self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+      return Err("LIMITER: " + e)
+    }
+  }
 
   // 第一关：黑名单检查
   match
@@ -83,12 +110,14 @@ pub fn Sandbox::sandbox_http_request(
     ) {
     Deny => {
       self.blocked_count = self.blocked_count + 1
+      self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+      self.alert_mgr.send_alert(Warning, "Domain Blocked", domain + " in blacklist")
       return Err("BLOCKED: domain '" + domain + "' is blacklisted")
     }
     Allow => ()
   }
 
-  // 第二关：DNS劫持检测 —— ponytail: 调用方传入已解析 IP 进行黑名单检查
+  // 第二关：DNS劫持检测
   // (生产环境需真实 DNS 解析；当前由调用方提供 resolved_ip 参数)
 
   // 第三关：授权检查 —— 工具声明过这个域名吗？
@@ -105,6 +134,8 @@ pub fn Sandbox::sandbox_http_request(
   }
   if !granted {
     self.blocked_count = self.blocked_count + 1
+    self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+    self.alert_mgr.send_alert(Warning, "Unauthorized Domain", domain + " not in grant")
     return Err(
       "BLOCKED: domain '" +
       domain +
@@ -127,8 +158,16 @@ pub fn Sandbox::sandbox_http_request(
 pub fn Sandbox::sandbox_file_open(
   self : Sandbox,
   path : String,
+  tool_id : String,
+  session_id : String,
 ) -> Result[String, String] {
   self.checked_count = self.checked_count + 1
+
+  // 第〇关：并发限流
+  match self.limiter.acquire(tool_id, session_id) {
+    Ok(_) => ()
+    Err(e) => { self.blocked_count = self.blocked_count + 1; return Err("LIMITER: " + e) }
+  }
 
   // 第一关：黑名单检查
   match
@@ -139,6 +178,8 @@ pub fn Sandbox::sandbox_file_open(
     ) {
     Deny => {
       self.blocked_count = self.blocked_count + 1
+      self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+      self.alert_mgr.send_alert(Warning, "Path Blocked", path + " is blacklisted")
       return Err("BLOCKED: path '" + path + "' is blacklisted")
     }
     Allow => ()

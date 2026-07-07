@@ -12,17 +12,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install MoonBit toolchain
-        run: |
-          curl -fsSL https://github.com/moonbitlang/moon/releases/download/v0.1.20260703/moon -o moon
-          chmod +x moon
-          echo "$PWD" >> $GITHUB_PATH
-          moon --version
+      - name: Set up MoonBit
+        uses: ./.github/actions/setup-moonbit
 
       - name: Info (generate .mbti)
         run: moon info

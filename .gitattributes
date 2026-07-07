@@ -1,0 +1,6 @@
+# Mark Rust runtime and Python scripts as vendored — core logic is MoonBit
+runtime/** linguist-vendored
+*.py linguist-vendored
+*.cmd linguist-vendored
+*.bat linguist-vendored
+presets/** linguist-vendored
