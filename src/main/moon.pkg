@@ -1,6 +1,6 @@
 import {
-  "aegisrun/lib",
-  "aegisrun/demo",
+  "tuya-me/aegisrun/lib",
+  "tuya-me/aegisrun/demo",
   "moonbitlang/core/env",
 }
 

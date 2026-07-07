@@ -1,5 +1,5 @@
 import {
-  "aegisrun/lib",
+  "tuya-me/aegisrun/lib",
   "moonbitlang/core/hashmap",
   "moonbitlang/core/env",
 }

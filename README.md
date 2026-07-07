@@ -56,7 +56,7 @@ cargo run -- serve
 ### 作为库使用
 
 ```moonbit
-// MoonBit: moon add aegisrun
+// MoonBit: moon add tuya-me/aegisrun
 let aegis = @lib.AegisRun::new("standard")
 aegis.check_domain("evil.com")          // → Deny
 aegis.check_path("/etc/passwd")          // → Deny

@@ -1,4 +1,4 @@
-name = "aegisrun"
+name = "tuya-me/aegisrun"
 
 version = "0.6.0"
 
