@@ -4,7 +4,7 @@ version = "0.6.0"
 
 readme = "README.md"
 
-repository = "https://github.com/your-username/aegisrun"
+repository = "https://gitlink.org.cn/tuya/AegisRun"
 
 license = "Apache-2.0"
 

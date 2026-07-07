@@ -232,17 +232,23 @@ pub fn AegisRun::export_policy(self : AegisRun) -> String {
   r = r + "preset=" + self.policy.preset_name
   r = r + "|domain_bl="
   for i = 0; i < self.domain_bl_track.length(); i = i + 1 {
-    if i > 0 { r = r + "," }
+    if i > 0 {
+      r = r + ","
+    }
     r = r + self.domain_bl_track[i]
   }
   r = r + "|path_bl="
   for i = 0; i < self.path_bl_track.length(); i = i + 1 {
-    if i > 0 { r = r + "," }
+    if i > 0 {
+      r = r + ","
+    }
     r = r + self.path_bl_track[i]
   }
   r = r + "|tool_bl="
   for i = 0; i < self.tool_bl_track.length(); i = i + 1 {
-    if i > 0 { r = r + "," }
+    if i > 0 {
+      r = r + ","
+    }
     r = r + self.tool_bl_track[i]
   }
   r
@@ -313,32 +319,35 @@ pub fn AegisRun::block_rate(self : AegisRun) -> String {
 // Tests
 // ═══════════════════════════════════════════
 
+///|
 test "aegisrun_facade" {
   let aegis = AegisRun::new("standard")
-  assert_eq!(aegis.check_domain("evil.com"), Deny)
-  assert_eq!(aegis.check_domain("wttr.in"), Allow)
-  assert_eq!(aegis.check_path("/etc/passwd"), Deny)
-  assert_eq!(aegis.check_path("/tmp/logs/app.log"), Allow)
-  assert_eq!(aegis.check_env("OPENAI_API_KEY"), Deny)
-  assert_eq!(aegis.check_env("USER"), Allow)
+  assert_eq(aegis.check_domain("evil.com"), Deny)
+  assert_eq(aegis.check_domain("wttr.in"), Allow)
+  assert_eq(aegis.check_path("/etc/passwd"), Deny)
+  assert_eq(aegis.check_path("/tmp/logs/app.log"), Allow)
+  assert_eq(aegis.check_env("OPENAI_API_KEY"), Deny)
+  assert_eq(aegis.check_env("USER"), Allow)
 }
 
+///|
 test "preset_switch" {
   let aegis = AegisRun::new("standard")
-  assert_eq!(aegis.check_domain("wttr.in"), Allow)
+  assert_eq(aegis.check_domain("wttr.in"), Allow)
   aegis.switch_preset("strict")
-  assert_eq!(aegis.check_domain("wttr.in"), Deny)
+  assert_eq(aegis.check_domain("wttr.in"), Deny)
   aegis.switch_preset("standard")
-  assert_eq!(aegis.check_domain("wttr.in"), Allow)
+  assert_eq(aegis.check_domain("wttr.in"), Allow)
 }
 
+///|
 test "block_and_export" {
   let aegis = AegisRun::new("standard")
   aegis.block("domain", "blocked-test.com")
-  assert_eq!(aegis.check_domain("blocked-test.com"), Deny)
+  assert_eq(aegis.check_domain("blocked-test.com"), Deny)
   aegis.allow("domain", "allowed-test.com")
-  assert_eq!(aegis.check_domain("allowed-test.com"), Allow)
+  assert_eq(aegis.check_domain("allowed-test.com"), Allow)
   let exported = aegis.export_policy()
-  assert_eq!(exported.contains("preset=standard"), true)
-  assert_eq!(exported.contains("blocked-test.com"), true)
+  assert_eq(exported.contains("preset=standard"), true)
+  assert_eq(exported.contains("blocked-test.com"), true)
 }

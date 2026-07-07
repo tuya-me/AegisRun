@@ -22,17 +22,14 @@ jobs:
         with:
           moon-version: "0.10.3"
 
-      - name: Module info
-        run: moon info
+      - name: Info (generate .mbti)
+        run: moon info --deny-warn
 
       - name: Format check
-        run: moon fmt --check
+        run: moon fmt --deny-warn
 
       - name: Compile check
         run: moon check
-
-      - name: Build
-        run: moon build
 
       - name: Test
         run: moon test

@@ -56,7 +56,8 @@ pub fn run_intercept_demo() -> Unit {
   if has_attack(attacks, "2") {
     println("-- Attack 2: *.cn suffix exfiltration --")
     println("  Tool attempts: POST https://data-harvest.cn/store")
-    match @lib.check_domain(domain_bl, suffixes, ip_prefixes, "data-harvest.cn") {
+    match
+      @lib.check_domain(domain_bl, suffixes, ip_prefixes, "data-harvest.cn") {
       Deny => {
         caught = caught + 1
         println("  [BLOCKED] *.cn suffix matched — sandbox intercept")

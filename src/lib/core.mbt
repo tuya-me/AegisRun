@@ -418,45 +418,48 @@ pub fn get_path_prefixes(state : PolicyState) -> Array[String] {
 // Tests
 // ═══════════════════════════════════════════
 
+///|
 test "domain_blocks" {
   let policy = new_policy_engine()
   let bl = get_blacklist_domains(policy)
   let suffixes = get_domain_suffixes(policy)
   let ip_prefixes = get_ip_prefixes(policy)
 
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "evil.com"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "stealer.cc"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "192.168.1.100"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "10.0.0.1"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "172.16.0.1"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "127.0.0.1"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "localhost"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "data-harvest.cn"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "botnet.ru"), Deny)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "wttr.in"), Allow)
-  assert_eq!(check_domain(bl, suffixes, ip_prefixes, "example.com"), Allow)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "evil.com"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "stealer.cc"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "192.168.1.100"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "10.0.0.1"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "172.16.0.1"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "127.0.0.1"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "localhost"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "data-harvest.cn"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "botnet.ru"), Deny)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "wttr.in"), Allow)
+  assert_eq(check_domain(bl, suffixes, ip_prefixes, "example.com"), Allow)
 }
 
+///|
 test "path_blocks" {
   let policy = new_policy_engine()
   let path_bl = get_blacklist_paths(policy)
   let prefixes = get_path_prefixes(policy)
 
-  assert_eq!(check_path(path_bl, prefixes, "/etc/passwd"), Deny)
-  assert_eq!(check_path(path_bl, prefixes, "/etc/shadow"), Deny)
-  assert_eq!(check_path(path_bl, prefixes, "~/.ssh/id_rsa"), Deny)
-  assert_eq!(check_path(path_bl, prefixes, "/tmp/logs/app.log"), Allow)
-  assert_eq!(check_path(path_bl, prefixes, "/home/user/docs"), Allow)
+  assert_eq(check_path(path_bl, prefixes, "/etc/passwd"), Deny)
+  assert_eq(check_path(path_bl, prefixes, "/etc/shadow"), Deny)
+  assert_eq(check_path(path_bl, prefixes, "~/.ssh/id_rsa"), Deny)
+  assert_eq(check_path(path_bl, prefixes, "/tmp/logs/app.log"), Allow)
+  assert_eq(check_path(path_bl, prefixes, "/home/user/docs"), Allow)
 }
 
+///|
 test "env_blocks" {
   let policy = new_policy_engine()
   let env_sensitive = get_sensitive_envs(policy)
 
-  assert_eq!(check_env(env_sensitive, "OPENAI_API_KEY"), Deny)
-  assert_eq!(check_env(env_sensitive, "DATABASE_URL"), Deny)
-  assert_eq!(check_env(env_sensitive, "GITHUB_TOKEN"), Deny)
-  assert_eq!(check_env(env_sensitive, "MY_SECRET_KEY"), Deny)
-  assert_eq!(check_env(env_sensitive, "USER"), Allow)
-  assert_eq!(check_env(env_sensitive, "LANG"), Allow)
+  assert_eq(check_env(env_sensitive, "OPENAI_API_KEY"), Deny)
+  assert_eq(check_env(env_sensitive, "DATABASE_URL"), Deny)
+  assert_eq(check_env(env_sensitive, "GITHUB_TOKEN"), Deny)
+  assert_eq(check_env(env_sensitive, "MY_SECRET_KEY"), Deny)
+  assert_eq(check_env(env_sensitive, "USER"), Allow)
+  assert_eq(check_env(env_sensitive, "LANG"), Allow)
 }

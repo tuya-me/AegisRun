@@ -2,3 +2,17 @@ target/
 .mooncakes/
 _build/
 runtime/target/
+
+# Generated interface files (moon info)
+*.mbti
+*.bak
+
+# ponytail: prevent credential leaks
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.*
+secrets.*
