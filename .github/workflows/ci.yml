@@ -17,10 +17,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install MoonBit (Linux)
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install.sh | bash -s -- --yes
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+      - name: Install MoonBit toolchain
+        uses: moonbit-community/setup-moonbit@v1
+        with:
+          moon-version: "0.10.3"
 
       - name: Info (generate .mbti)
         run: moon info
