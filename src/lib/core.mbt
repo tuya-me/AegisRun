@@ -127,12 +127,11 @@ pub fn check_env(sensitive : Array[String], varname : String) -> Decision {
     }
   }
   let upper = varname.to_upper()
-  if upper.contains("KEY") ||
-    upper.contains("SECRET") ||
-    upper.contains("TOKEN") ||
-    upper.contains("PASSWORD") ||
-    upper.contains("CREDENTIAL") {
-    return Deny
+  for kw in env_keywords() {
+    if upper.contains(kw) {
+      println("    [INFO] keyword-pattern: " + kw + " matches " + varname)
+      return Deny
+    }
   }
   Allow
 }
@@ -150,47 +149,7 @@ pub fn check_tool_id(
 
 // ── Policy Engine ──
 
-///|
-fn default_blacklist_paths() -> Array[String] {
-  // v0.6.0: 从8→30+路径，覆盖 Linux/macOS/Windows 完整凭证目录
-  [
-    // Linux 系统文件
-    "/etc/passwd", "/etc/shadow", "/etc/ssl/private/", "/var/run/secrets/", "/proc/self/environ",
-    "/root/.bash_history", "/var/log/auth.log",
-    // 开发者凭证目录
-     "~/.ssh/", "~/.aws/", "~/.gnupg/", "~/.kube/config",
-    // macOS 钥匙串和浏览器
-     "~/Library/Keychains/", "~/Library/Application Support/Google/Chrome/", "~/Library/Application Support/Firefox/",
-    // Windows 系统
-     "C:\\Windows\\System32\\config\\", "C:\\Users\\*\\.kube\\config", "C:\\Users\\*\\AppData\\Roaming\\npm\\npmrc",
-    "C:\\ProgramData\\Docker\\config.json",
-    // 通用高危文件类型
-     ".pem", ".key", ".env", "config.yaml",
-  ]
-}
-
-///|
-fn default_blacklist_envs() -> Array[String] {
-  // v0.6.0: 从8→30+模式，覆盖全部云平台+CI/CD+通信服务
-  [
-    // AI 服务
-    "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "COHERE_API_KEY", "DEEPSEEK_API_KEY",
-    "GOOGLE_AI_API_KEY",
-    // 云平台 (AWS/GCP/Azure/阿里/腾讯/华为)
-     "AWS_SECRET", "AWS_ACCESS_KEY", "GCP_", "AZURE_", "ALIBABA_CLOUD", "TENCENT_CLOUD",
-    "HUAWEI_CLOUD",
-    // 数据库和缓存
-     "DATABASE_URL", "REDIS_URL", "MONGODB_URI", "RABBITMQ_URL", "POSTGRES_", "MYSQL_",
-    // CI/CD
-     "GITHUB_TOKEN", "GITLAB_TOKEN", "BITBUCKET_", "CIRCLECI_", "JENKINS_", "TRAVIS_",
-    // 通信和支付
-     "SENDGRID_API", "TWILIO_", "STRIPE_", "SLACK_TOKEN", "SLACK_WEBHOOK", "NOTION_TOKEN",
-    // 容器和K8s
-     "DOCKER_PASSWORD", "DOCKER_AUTH", "KUBECONFIG", "KUBE_",
-    // 加密和证书
-     "PRIVATE_KEY", "SSL_KEY", "CERTIFICATE", "PGP_", "GPG_", "NPM_TOKEN", "PYPI_TOKEN",
-  ]
-}
+// ponytail: 默认策略数据已迁移到 defaults.mbt，此处不再维护硬编码
 
 ///|
 pub fn new_policy_engine() -> PolicyState {
@@ -200,7 +159,7 @@ pub fn new_policy_engine() -> PolicyState {
     blacklist_paths: @hashmap.HashMap([], capacity=16),
     blacklist_tools: @hashmap.HashMap([], capacity=8),
     whitelist_domains: @hashmap.HashMap([], capacity=8),
-    sensitive_envs: default_blacklist_envs(),
+    sensitive_envs: default_env_patterns(),
     auto_grant_timeout_ms: 30000,
     auto_grant_memory_kb: 262144,
     domain_suffix_patterns: [],
@@ -214,23 +173,20 @@ pub fn new_policy_engine() -> PolicyState {
 ///|
 pub fn load_standard_preset(state : PolicyState) -> Unit {
   state.preset_name = "standard"
-  state.blacklist_domains.set("evil.com", "known-malware-c2")
-  state.blacklist_domains.set("stealer.cc", "data-exfil-host")
-  state.blacklist_domains.set("192.168.*", "internal-network")
-  state.blacklist_domains.set("10.*", "private-network")
-  state.blacklist_domains.set("172.16.*", "private-network")
-  state.blacklist_domains.set("127.0.0.1", "loopback")
-  state.blacklist_domains.set("localhost", "loopback")
-  state.domain_suffix_patterns = ["*.cn", "*.ru", "*.tk"]
-  state.ip_prefixes = ["10.", "172.", "192.168."] // ponytail: 从硬编码提取为可迭代列表
-  for p in default_blacklist_paths() {
+  for pair in default_domain_blacklist() {
+    state.blacklist_domains.set(pair.0, pair.1)
+  }
+  state.domain_suffix_patterns = default_domain_suffixes()
+  state.ip_prefixes = default_ip_prefixes()
+  for p in default_sensitive_paths() {
     state.blacklist_paths.set(p, "sensitive")
     state.path_prefix_patterns.push(p)
   }
-  state.whitelist_domains.set("api.github.com", "GitHub-API")
-  state.whitelist_domains.set("wttr.in", "weather-API")
-  state.auto_grant_timeout_ms = 30000
-  state.auto_grant_memory_kb = 262144
+  for pair in default_domain_whitelist() {
+    state.whitelist_domains.set(pair.0, pair.1)
+  }
+  state.auto_grant_timeout_ms = default_timeout_ms()
+  state.auto_grant_memory_kb = default_memory_kb()
 }
 
 ///|
