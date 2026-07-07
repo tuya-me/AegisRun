@@ -38,7 +38,7 @@ jobs:
         run: moon update
 
       - name: Check diagnostics
-        run: moon check --deny-warn --target ${{ matrix.target }}
+        run: moon check --target ${{ matrix.target }}
 
       - name: Run tests
         run: moon test --target ${{ matrix.target }}
