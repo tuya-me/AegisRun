@@ -122,6 +122,33 @@ Agent 可调 5 个工具：sandbox / scan / check_domain / check_path / check_en
 
 ---
 
+## 规则定制
+
+AegisRun 的规则完全可配置，三种方式按需选用：
+
+| 方式 | 路径 | 适合场景 |
+|------|------|----------|
+| 编辑 YAML 预设 | `presets/standard.yaml` | 项目启动时确定策略 |
+| 命令行 | `moon run src/main deny domain xxx` | 快速临时封禁 |
+| Web 面板 | `cargo run -- serve` → 浏览器操作 | 非开发人员使用 |
+
+**接入外部数据源**：YAML 和 JSON 都是标准格式，可以把企业防火墙导出的 IP 列表、行业 ISAC 共享的黑名单、自建蜜罐捕获的攻击 IP 直接写入 `policy.json`，程序启动自动加载。
+
+```yaml
+# presets/standard.yaml — 扩展示例
+blacklist:
+  network:
+    domains:
+      - "evil.com"           # 内置
+      - "phish.your-org.cn"  # 你们公司发现的钓鱼域名
+      - "192.168.*"          # 内网
+  env_vars:
+    - "OPENAI_API_KEY"       # 内置
+    - "INTERNAL_MASTER_KEY"  # 你们的内部密钥前缀
+```
+
+---
+
 ## 12 种可拦截攻击
 
 | # | 表面功能 | 隐藏恶意 | 拦截方式 |

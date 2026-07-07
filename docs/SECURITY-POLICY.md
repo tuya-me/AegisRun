@@ -12,17 +12,39 @@ AegisRun 不是另一个杀毒软件。它的核心假设是：**AI Agent 调用
 
 ## 规则数据来源
 
-AegisRun 内置的黑名单规则来自以下公开威胁情报：
+AegisRun 的内置黑名单整合了多层次的公开威胁情报：
 
 | 类别 | 来源 | 说明 |
 |------|------|------|
 | C2 服务器 IP | abuse.ch / AlienVault OTX | 已知恶意软件命令控制服务器 |
+| 恶意软件分发 | URLhaus / MalwareBazaar | 恶意样本托管 URL |
+| 钓鱼域名 | PhishTank / OpenPhish / Cloudflare Radar | 多渠道交叉验证的钓鱼站点 |
+| 扫描与扫描器 | GreyNoise / Shodan | 互联网背景噪声 IP，辅助排除误报 |
 | Tor 出口节点 | Tor Project 官方列表 | 匿名网络出口节点 |
-| 钓鱼域名 | PhishTank / OpenPhish | 社区提交的钓鱼 URL |
-| 私有网络地址 | RFC 1918 | 防止内网横向移动 |
+| 私有网络地址 | RFC 1918 / RFC 6598 | 防止内网横向移动 |
+| 链路本地和组播 | RFC 3927 / RFC 5771 | 169.254.x.x / 224.x.x.x |
 | 免费域名 TLD | IANA 根区数据库 | `.tk` `.ml` `.ga` `.cf` 等钓鱼高发 TLD |
+| 国家代码 TLD | IANA | `*.cn` `*.ru`（按需启用） |
+| 已知恶意注册商 | Spamhaus DROP / Proofpoint ET | 恶意注册商 IP 段 |
 
-规则按「标准/严格/宽松」三档预设打包，用户可自定义增删。默认预设偏向保守——宁可误拦也不漏放。
+## 扩展规则
+
+AegisRun 支持三种方式扩充规则：
+
+1. **YAML 预设文件**（`presets/standard.yaml`）——直接用编辑器修改，`domain`、`path`、`env_var` 列表自由增删
+2. **`policy.json`** —— Rust 运行时持久化策略，Web 面板修改后自动保存，程序重启自动加载
+3. **Web 管理面板**（`cargo run -- serve`）——浏览器操作，一键导出 CLI 命令粘贴到终端同步
+
+### 接入外部威胁情报
+
+AegisRun 不内置联网更新。建议按自己需要从以下渠道定期拉取，写入 `policy.json` 或 YAML preset：
+
+- **企业自有黑名单**：内网扫描发现的恶意 IP/域名，直接追加到 `blocked_domains`
+- **行业 ISAC**：金融/医疗/能源等行业威胁情报共享中心，导出 IP/域名列表后批量导入
+- **商业威胁情报**：Recorded Future / Mandiant / CrowdStrike 等，导出 STIX/CSV 后脚本转换为 AegisRun 格式
+- **自建蜜罐**：捕获的攻击 IP 写入审计日志交叉比对
+
+格式兼容 JSON 和 YAML，字段名与预设文件一致即可。
 
 ## 同类参考
 
