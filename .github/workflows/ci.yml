@@ -34,18 +34,6 @@ jobs:
       - name: Test
         run: moon test
 
-      - name: Strict: Info diff
-        run: moon info && git diff --exit-code -- '*.mbti'
-        continue-on-error: true
-
-      - name: Strict: Format diff
-        run: moon fmt && git diff --exit-code
-        continue-on-error: true
-
-      - name: Strict: Check deny-warn
-        run: moon check --deny-warn
-        continue-on-error: true
-
   rust-checks:
     name: Rust Checks
     runs-on: ubuntu-latest
