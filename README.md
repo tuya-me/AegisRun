@@ -1,4 +1,4 @@
-# AegisRun v0.6.0
+# AegisRun v0.7.0
 
 **AI Agent 安全工具执行框架 — MoonBit 策略引擎 + Rust 沙箱运行时**
 
