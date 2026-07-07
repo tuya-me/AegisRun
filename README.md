@@ -8,14 +8,22 @@
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
 > MoonBit `>= 0.1.20260608` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 39
-> 
 > **安装**: `moon add tuya-me/aegisrun` &nbsp;|&nbsp; **当前分支**: `clean-v2`
 
 ---
 
 ## 项目简介
 
-AegisRun 让 AI Agent 安全调用第三方工具。每个工具编译为 WebAssembly 模块，零权限启动，按需授权。
+AI Agent 在运行中被第三方工具窃取 API Key、上传敏感文件、扫描内网——这不是假设，是已经发生的事。AegisRun 提供一个**轻量安全执行层**，在工具和系统之间做五层纵深防御，让 Agent 只能调用你允许范围内的能力。
+
+- **MoonBit 层**（~3500 行）：域名/IP 黑名单、路径拦截、环境变量过滤、风险评分、限流熔断、SQL 防护
+- **Rust 层**（~1000 行）：wasmtime WASI 物理隔离沙箱、Web 面板、审计日志、工具签名验证
+
+相关文档导航：
+- **入门**：[新手指南](GUIDE.md) → 3 分钟跑通拦截演示
+- **架构**：[架构文档](docs/ARCHITECTURE.md) → 调用链与数据结构
+- **策略**：[安全策略](docs/SECURITY-POLICY.md) → 规则来源、扩展方式、审计排查
+- **贡献**：[开发者指南](docs/CONTRIBUTING.md) → 可贡献方向
 
 **两层架构**：
 
@@ -280,6 +288,7 @@ aegisrun/
 - [GUIDE.md](GUIDE.md) — 新手指南（3 分钟上手 + 常见坑）
 - [CHANGELOG.md](CHANGELOG.md) — 更新日志（版本变更记录）
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构文档（完整调用链 + 数据结构）
+- [docs/SECURITY-POLICY.md](docs/SECURITY-POLICY.md) — 安全策略（规则来源、扩展方式、审计排查）
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — 开发者指南（贡献方向 + 代码规范）
 - [docs/DOCUMENTATION-GUIDE.md](docs/DOCUMENTATION-GUIDE.md) — 文档规范
 - [runtime/README.md](runtime/README.md) — Rust 运行时说明
