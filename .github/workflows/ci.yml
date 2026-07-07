@@ -19,8 +19,10 @@ jobs:
 
       - name: Install MoonBit toolchain
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          curl -fsSL https://github.com/moonbitlang/moon/releases/download/v0.1.20260703/moon -o moon
+          chmod +x moon
+          echo "$PWD" >> $GITHUB_PATH
+          moon --version
 
       - name: Info (generate .mbti)
         run: moon info
