@@ -8,6 +8,8 @@
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
 > MoonBit `>= 0.1.20260608` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 39
+> 
+> **安装**: `moon add tuya-me/aegisrun` &nbsp;|&nbsp; **当前分支**: `clean-v2`
 
 ---
 
