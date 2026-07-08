@@ -9,6 +9,9 @@ runtime/target/
 
 .gitcredentials
 
+# Claude Code settings (local)
+.claude/
+
 # ponytail: prevent credential leaks
 .env
 .env.*
