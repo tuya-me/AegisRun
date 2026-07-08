@@ -1,7 +1,6 @@
 # AegisRun 开发者贡献指南
 
 > v0.8.0 | 如何参与开发 | 可贡献方向 | 代码规范
-> 🇬🇧 [English version →](docs-en/CONTRIBUTING.md)
 
 ---
 
