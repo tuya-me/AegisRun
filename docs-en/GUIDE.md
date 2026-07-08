@@ -1,6 +1,5 @@
 # AegisRun User Guide
 
-> 🇨🇳 [中文版 →](docs-ch/GUIDE.md)
 > Two levels: Beginner — 3 min onboarding | Detailed — library API, CLI, WASI sandbox, web panel
 
 ---
