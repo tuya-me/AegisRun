@@ -1,6 +1,5 @@
 # AegisRun Security Policy
 
-> 🇨🇳 [中文版 →](docs-ch/SECURITY-POLICY.md)
 
 ---
 
