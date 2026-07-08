@@ -1,6 +1,5 @@
 # AegisRun 使用指南
 
-> 🇬🇧 [English version →](docs-en/GUIDE.md)
 > 双级合一：新手入门 — 3 分钟上手 + 排障 | 详情参考 — 库 API、CLI、WASI 沙箱、网页面板
 
 ---
