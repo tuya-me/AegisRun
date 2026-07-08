@@ -1,6 +1,6 @@
 name = "tuya-me/aegisrun"
 
-version = "1.0.0"
+version = "0.9.0"
 
 readme = "README.md"
 
