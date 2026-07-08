@@ -1,6 +1,6 @@
 # AegisRun Architecture
 
-> v0.8.0 | MoonBit 0.1.20260608
+> v1.0.0 | MoonBit 0.1.20260608
 
 ---
 

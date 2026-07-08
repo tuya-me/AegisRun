@@ -20,6 +20,14 @@ impl Show for Decision with to_string(self) {
   }
 }
 
+/// 跨包 toString 辅助函数（Show trait 跨包不可见时的备选方案）
+pub fn Decision::decision_show(self : Decision) -> String {
+  match self {
+    Allow => "Allow"
+    Deny => "Deny"
+  }
+}
+
 ///|
 pub struct ToolInfo {
   id : String

@@ -1,4 +1,4 @@
-# AegisRun v0.8.0
+# AegisRun v1.0.0
 
 **AI Agent Secure Tool Execution Framework — MoonBit Policy Engine + Rust Sandbox Runtime**
 

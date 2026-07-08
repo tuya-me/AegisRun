@@ -1,0 +1,3 @@
+{"timestamp":"1783526380","tool_id":"weather-query","action":"execute","decision":"DENY","reason":"evil.com in blacklist"}
+{"timestamp":"1783526380","tool_id":"log-analyzer","action":"execute","decision":"DENY","reason":"/etc/passwd blocked"}
+{"timestamp":"1783526380","tool_id":"calculator","action":"execute","decision":"ALLOW","reason":"safe tool"}

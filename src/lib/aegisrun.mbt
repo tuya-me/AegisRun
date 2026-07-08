@@ -1,22 +1,21 @@
 // ============================================================
-// AegisRun v0.5.0 — 统一门面，一行接入，内部函数零暴露
+// AegisRun v0.8.0 — 统一门面，一行接入，五层防御全开
 // ============================================================
 // 用法:
 //   let aegis = @lib.AegisRun::new("standard")
-//   aegis.check_domain("evil.com")          // → Deny
+//   aegis.check_domain("evil.com")          // → Deny (fast, cached)
+//   aegis.check_http("https://evil.com")    // → Err (五层全开)
 //   aegis.check_path("/etc/passwd")          // → Deny
 //   aegis.check_env("OPENAI_API_KEY")        // → Deny
-//   aegis.scan_tool_manifest("tool.toml")    // → RiskReport
+//   aegis.score_manifest("tool", ...)        // → RiskReport
 //   aegis.export_policy()                    // → String (JSON)
 //   aegis.switch_preset("strict")            // → 切换预设
 //   aegis.block("domain", "evil.com")        // → 加入黑名单
-//   aegis.allow("domain", "wttr.in")         // → 加入白名单
 // ============================================================
 
 ///|
 pub struct AegisRun {
-  policy : PolicyState
-  ip_bl : IpBlacklist
+  sandbox : Sandbox
   // 缓存：HashMap 加速重复查询
   mut domain_cache : @hashmap.HashMap[String, Decision]
   mut path_cache : @hashmap.HashMap[String, Decision]
@@ -43,9 +42,17 @@ pub fn AegisRun::new(preset : String) -> AegisRun {
     "permissive" => policy.preset_name = "permissive"
     _ => () // standard is default
   }
+  let grant = {
+    allowed_domains: ["wttr.in", "api.github.com"],
+    allowed_paths: ["/tmp/reports/", "/tmp/logs/"],
+    allowed_env_vars: ["USER", "LANG", "HOME"],
+    min_score: 30,
+    max_timeout_ms: 30000,
+    max_memory_kb: 262144,
+    max_file_size_kb: 10240,
+  }
   {
-    policy,
-    ip_bl: new_ip_blacklist(),
+    sandbox: new_sandbox(policy, grant),
     domain_cache: @hashmap.HashMap([], capacity=64),
     path_cache: @hashmap.HashMap([], capacity=64),
     env_cache: @hashmap.HashMap([], capacity=32),
@@ -57,9 +64,16 @@ pub fn AegisRun::new(preset : String) -> AegisRun {
   }
 }
 
+// ═══════ 五层全开 HTTP 检查（新！）═══════
+
+/// 完整五层 HTTP 请求检查：限流→评分→黑名单→DNS→授权
+pub fn AegisRun::check_http(self : AegisRun, url : String) -> Result[String, String] {
+  self.sandbox.sandbox_http_request(url, "aegisrun", "default", "")
+}
+
 // ═══════ 核心检查（一行调用，内部自动取 bl/suffixes）═══
 
-// 域名检查 —— 用户只需传域名
+// 域名检查 —— 用户只需传域名（快速路径，走缓存）
 
 ///|
 pub fn AegisRun::check_domain(self : AegisRun, domain : String) -> Decision {
@@ -74,9 +88,9 @@ pub fn AegisRun::check_domain(self : AegisRun, domain : String) -> Decision {
   }
   // 查黑名单
   let result = check_domain(
-    self.policy.blacklist_domains,
-    self.policy.domain_suffix_patterns,
-    self.policy.ip_prefixes,
+    self.sandbox.policy.blacklist_domains,
+    self.sandbox.policy.domain_suffix_patterns,
+    self.sandbox.policy.ip_prefixes,
     domain,
   )
   self.domain_cache.set(domain, result)
@@ -97,8 +111,8 @@ pub fn AegisRun::check_path(self : AegisRun, path : String) -> Decision {
     None => ()
   }
   let result = check_path(
-    self.policy.blacklist_paths,
-    self.policy.path_prefix_patterns,
+    self.sandbox.policy.blacklist_paths,
+    self.sandbox.policy.path_prefix_patterns,
     path,
   )
   self.path_cache.set(path, result)
@@ -118,7 +132,7 @@ pub fn AegisRun::check_env(self : AegisRun, varname : String) -> Decision {
     Some(result) => return result
     None => ()
   }
-  let result = check_env(self.policy.sensitive_envs, varname)
+  let result = check_env(self.sandbox.policy.sensitive_envs, varname)
   self.env_cache.set(varname, result)
   match result {
     Deny => self.total_blocks = self.total_blocks + 1
@@ -168,17 +182,17 @@ pub fn AegisRun::switch_preset(self : AegisRun, name : String) -> Unit {
   self.path_cache = @hashmap.HashMap([], capacity=64)
   self.env_cache = @hashmap.HashMap([], capacity=32)
 
-  // ponytail: 清空旧黑名单再加载新预设，避免 strict 的 "*" 残留
-  self.policy.blacklist_domains = @hashmap.HashMap([], capacity=16)
-  self.policy.blacklist_paths = @hashmap.HashMap([], capacity=16)
-  self.policy.ip_prefixes = []
+  // ponytail: 清空旧黑名单再加载新预设
+  self.sandbox.policy.blacklist_domains = @hashmap.HashMap([], capacity=16)
+  self.sandbox.policy.blacklist_paths = @hashmap.HashMap([], capacity=16)
+  self.sandbox.policy.ip_prefixes = []
   match name {
     "strict" => {
-      self.policy.preset_name = "strict"
-      self.policy.blacklist_domains.set("*", "all blocked")
+      self.sandbox.policy.preset_name = "strict"
+      self.sandbox.policy.blacklist_domains.set("*", "all blocked")
     }
-    "permissive" => self.policy.preset_name = "permissive"
-    _ => load_standard_preset(self.policy)
+    "permissive" => self.sandbox.policy.preset_name = "permissive"
+    _ => load_standard_preset(self.sandbox.policy)
   }
 }
 
@@ -190,21 +204,21 @@ pub fn AegisRun::block(
 ) -> Unit {
   match target_type {
     "domain" => {
-      self.policy.blacklist_domains.set(value, "manual")
+      self.sandbox.policy.blacklist_domains.set(value, "manual")
       self.domain_cache = @hashmap.HashMap([], capacity=64)
       if !self.domain_bl_track.contains(value) {
         self.domain_bl_track.push(value)
       }
     }
     "path" => {
-      self.policy.blacklist_paths.set(value, "manual")
+      self.sandbox.policy.blacklist_paths.set(value, "manual")
       self.path_cache = @hashmap.HashMap([], capacity=64)
       if !self.path_bl_track.contains(value) {
         self.path_bl_track.push(value)
       }
     }
     "tool" => {
-      self.policy.blacklist_tools.set(value, "manual")
+      self.sandbox.policy.blacklist_tools.set(value, "manual")
       if !self.tool_bl_track.contains(value) {
         self.tool_bl_track.push(value)
       }
@@ -220,7 +234,7 @@ pub fn AegisRun::allow(
   value : String,
 ) -> Unit {
   if target_type == "domain" {
-    self.policy.whitelist_domains.set(value, "manual")
+    self.sandbox.policy.whitelist_domains.set(value, "manual")
   }
 }
 
@@ -229,7 +243,7 @@ pub fn AegisRun::allow(
 ///|
 pub fn AegisRun::export_policy(self : AegisRun) -> String {
   let mut r = ""
-  r = r + "preset=" + self.policy.preset_name
+  r = r + "preset=" + self.sandbox.policy.preset_name
   r = r + "|domain_bl="
   for i = 0; i < self.domain_bl_track.length(); i = i + 1 {
     if i > 0 {
@@ -263,7 +277,7 @@ pub fn AegisRun::import_from_env(self : AegisRun) -> Unit {
     None => ""
   }
   if patch != "" {
-    load_policy_patch(self.policy, patch)
+    load_policy_patch(self.sandbox.policy, patch)
     // 清缓存
     self.domain_cache = @hashmap.HashMap([], capacity=64)
     self.path_cache = @hashmap.HashMap([], capacity=64)
@@ -297,13 +311,15 @@ pub fn AegisRun::score_manifest(
 ///|
 pub fn AegisRun::stats(self : AegisRun) -> String {
   "AegisRun: preset=" +
-  self.policy.preset_name +
+  self.sandbox.policy.preset_name +
   " checks=" +
   self.total_checks.to_string() +
   " blocks=" +
   self.total_blocks.to_string() +
   " cache_size=" +
-  self.domain_cache.length().to_string()
+  self.domain_cache.length().to_string() +
+  " | " +
+  self.sandbox.stats()
 }
 
 ///|

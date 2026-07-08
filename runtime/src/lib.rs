@@ -199,48 +199,113 @@ pub fn sandbox_getenv(policy: &Policy, var: &str) -> Result<String, String> {
 // ═══════════════════════════════════════
 
 /// 扫描脚本源码，返回安全违规列表
+/// 全面扫描: 不依赖特定函数调用，扫描所有行的字符串/域名/路径
 pub fn scan_script(source: &str) -> Vec<ScanFinding> {
     let policy = Policy::standard();
     let mut findings = Vec::new();
+    let sensitive_commands = ["curl ", "wget ", "ssh ", "scp ", "sftp ", "telnet ", "nc "];
 
     for (i, line) in source.lines().enumerate() {
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with("//") { continue; }
 
-        // 检测文件操作
-        if trimmed.contains("open(") {
-            for s in extract_strings(trimmed) {
-                if looks_like_path(&s) && !policy.check_path(&s) {
-                    findings.push(ScanFinding { line: i+1, kind: "path".into(), value: s, blocked: true });
+        let strings = extract_strings(trimmed);
+        let hosts = extract_hosts(trimmed);
+
+        // 1. 扫描所有字符串: 检查是否是敏感环境变量名
+        for s in &strings {
+            if is_env_var_name(s) && !policy.check_env(s) {
+                findings.push(ScanFinding { line: i+1, kind: "env".into(), value: s.clone(), blocked: true });
+            }
+            if s.contains(' ') || s.contains('/') {
+                for token in s.split(&[' ', '/', '\t', ':'][..]) {
+                    let t = token.trim();
+                    if is_env_var_name(t) && !policy.check_env(t) {
+                        findings.push(ScanFinding { line: i+1, kind: "env".into(), value: t.to_string(), blocked: true });
+                        break;
+                    }
                 }
             }
         }
-        // 检测环境变量
-        if trimmed.contains("environ.get(") || trimmed.contains("getenv(") {
-            for s in extract_strings(trimmed) {
-                if is_env_var_name(&s) && !policy.check_env(&s) {
-                    findings.push(ScanFinding { line: i+1, kind: "env".into(), value: s, blocked: true });
+
+        // 2. 检查 shell 命令中的嵌入路径
+        for s in &strings {
+            if looks_like_path(s) && !policy.check_path(s) {
+                findings.push(ScanFinding { line: i+1, kind: "path".into(), value: s.clone(), blocked: true });
+            }
+            if s.contains(' ') {
+                for token in s.split_whitespace() {
+                    if looks_like_path(token) && !policy.check_path(token) {
+                        findings.push(ScanFinding { line: i+1, kind: "path".into(), value: token.to_string(), blocked: true });
+                        break;
+                    }
                 }
             }
         }
-        // 检测域名
-        if trimmed.contains("http://") || trimmed.contains("https://") {
-            for host in extract_hosts(trimmed) {
-                if !policy.check_domain(&host) {
-                    findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host, blocked: true });
+
+        // 3. 敏感 shell 命令 + subprocess URL 检测
+        for cmd in &sensitive_commands {
+            if trimmed.contains(cmd) {
+                for s in &strings {
+                    for token in s.split_whitespace() {
+                        if token.starts_with("http://") || token.starts_with("https://") {
+                            for host in extract_hosts(token) {
+                                if !policy.check_domain(&host) {
+                                    findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
+                                }
+                            }
+                        }
+                        if looks_like_path(token) && !policy.check_path(token) {
+                            findings.push(ScanFinding { line: i+1, kind: "path".into(), value: token.to_string(), blocked: true });
+                        }
+                    }
                 }
+                break;
+            }
+        }
+
+        // 4. 敏感编码函数调用检测 (base64/hex/rot13 等)
+        let encoding_funcs = ["base64.b64decode", "binascii.unhexlify", "unhexlify",
+                              "base64_decode", "fromhex", "translate("];
+        for func in &encoding_funcs {
+            if trimmed.contains(func) {
+                for s in &strings {
+                    if is_env_var_name(s) && !policy.check_env(s) {
+                        findings.push(ScanFinding { line: i+1, kind: "encoded-env".into(), value: s.clone(), blocked: false });
+                    }
+                }
+                findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: format!("encoding call: {}", func), blocked: false });
+            }
+        }
+
+        // 5. 检测疑似 base64/hex 编码的字符串
+        for s in &strings {
+            if s.len() >= 16 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '=') {
+                if (s.ends_with('=') || s.len() % 4 == 0) && s.chars().filter(|c| c.is_alphabetic()).count() > s.len() / 2 {
+                    findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: format!("base64-like: {}...", &s[..20.min(s.len())]), blocked: false });
+                }
+            }
+        }
+
+        // 5. 扫描所有提取的域名 + IP
+        for host in &hosts {
+            if !policy.check_domain(host) {
+                findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
             }
         }
     }
     findings
 }
 
+#[derive(Clone)]
 pub struct ScanFinding {
     pub line: usize,
     pub kind: String,
     pub value: String,
     pub blocked: bool,
 }
+
+pub mod sandbox_monitor;
 
 // ── 辅助 ──
 fn extract_strings(line: &str) -> Vec<String> {

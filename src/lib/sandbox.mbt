@@ -101,6 +101,7 @@ pub fn Sandbox::sandbox_http_request(
   url : String,
   tool_id : String,
   session_id : String,
+  resolved_ip : String,
 ) -> Result[String, String] {
   self.checked_count = self.checked_count + 1
   let domain = extract_host(url)
@@ -145,8 +146,18 @@ pub fn Sandbox::sandbox_http_request(
     Allow => ()
   }
 
-  // 第二关：DNS劫持检测
-  // (生产环境需真实 DNS 解析；当前由调用方提供 resolved_ip 参数)
+  // 第二关：DNS 劫持检测
+  if resolved_ip != "" {
+    match check_ip(self.ip_bl, resolved_ip) {
+      Ok(_) => ()
+      Err(e) => {
+        self.blocked_count = self.blocked_count + 1
+        self.monitor.update_metrics(0, 0, 0, 0, 0, self.blocked_count, 1)
+        self.alert_mgr.send_alert(Warning, "DNS Blocked", e)
+        return Err("DNS: " + e)
+      }
+    }
+  }
 
   // 第三关：授权检查 —— 工具声明过这个域名吗？
   let mut granted = false

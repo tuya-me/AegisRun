@@ -84,7 +84,51 @@ fn main() {
                 _ => println!("Usage: aegisrun policy [show|set|block|allow]"),
             }
         }
+        "sandbox-run" => {
+            let script_path = args.get(2).expect("Usage: aegisrun sandbox-run <script.py>");
+            run_sandbox_monitor(script_path);
+        }
         _ => print_help(),
+    }
+}
+
+fn run_sandbox_monitor(script_path: &str) {
+    use aegisrun_runtime::sandbox_monitor;
+    let policy = Policy::standard();
+
+    // 1. 静态扫描
+    println!("[1/3] 静态源码扫描...");
+    let source = std::fs::read_to_string(script_path).unwrap_or_default();
+    let static_findings = scan_script(&source);
+
+    // 2. 运行时监控
+    println!("[2/3] 运行时行为监控...");
+    let runtime_findings = sandbox_monitor::run_sandbox(script_path, &policy);
+
+    // 3. 合并结果
+    println!("[3/3] 生成合并报告...\n");
+    let merged = sandbox_monitor::merge_findings(&static_findings, &runtime_findings);
+
+    println!("╔══════════════════════════════════════════════════╗");
+    println!("║  AegisRun 沙箱运行报告                           ║");
+    println!("║  {}                                     ║", script_path);
+    println!("╠══════════════════════════════════════════════════╣");
+    println!("║  静态扫描: {} 项 | 运行时: {} 项              ║",
+        static_findings.len(), runtime_findings.len());
+    println!("╚══════════════════════════════════════════════════╝\n");
+
+    for f in &merged {
+        let icon = if f.blocked { "🔴" } else { "⚠️" };
+        println!("  {} [{}] {} {}", icon, f.kind, f.value,
+            if f.blocked { "— BLOCKED" } else { "— FLAGGED" });
+    }
+
+    let blocked_count = merged.iter().filter(|f| f.blocked).count();
+    if blocked_count > 0 {
+        println!("\n  {} violations — BLOCKED", blocked_count);
+        println!("  Runtime sandbox prevented {} operations at execution time.\n", runtime_findings.len());
+    } else {
+        println!("\n  No violations found.\n");
     }
 }
 

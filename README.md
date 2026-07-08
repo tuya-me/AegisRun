@@ -1,4 +1,4 @@
-# AegisRun v0.8.0
+# AegisRun v1.0.0
 
 **AI Agent 安全工具执行框架 — MoonBit 策略引擎 + Rust 沙箱运行时**
 
@@ -9,115 +9,206 @@
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
-> MoonBit `>= 0.1.20260608` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 39
-> **安装：** `moon add tuya-me/aegisrun` &nbsp;|&nbsp; **分支：** `clean-v2`
+---
+
+## 目录
+
+1. [项目简介](#项目简介)
+2. [快速开始](#快速开始)
+3. [真实攻击拦截报告](#真实攻击拦截报告)
+4. [沙箱行为监控](#沙箱行为监控)
+5. [策略配置](#策略配置)
+6. [文档导视](#文档导视)
 
 ---
 
 ## 项目简介
 
-AI Agent 在运行中被第三方工具窃取 API Key、上传敏感文件、扫描内网——这不是假设，是已经发生的事。AegisRun 提供一个**轻量安全执行层**，在工具和系统之间做五层纵深防御。
+AI Agent 调用的第三方工具可能窃取 API Key、上传敏感文件、扫描内网。AegisRun 提供**五层纵深防御** + **运行时行为监控**，在工具执行前和执行中双重拦截。
 
-- **MoonBit 层**（~3500 行）：域名/IP 黑名单、路径拦截、环境变量过滤、风险评分、限流熔断、SQL 防护
-- **Rust 层**（~1000 行）：wasmtime WASI 物理隔离沙箱、Web 面板、审计日志、工具签名验证
-
-## 两层架构
+### 架构
 
 ```
-MoonBit 库 (src/lib/)               Rust 运行时 (runtime/)
+MoonBit 策略引擎 (src/lib/)        Rust 沙箱运行时 (runtime/)
 ┌────────────────────┐           ┌──────────────────────────────┐
-│ check_domain()     │   Allow   │ wasmtime WASI 拦截器          │
-│ check_path()       │←─────────│ path_open → check_path       │
-│ check_env()        │   Deny    │ environ_get → check_env      │
-│                    │           │ sock_send → check_domain    │
-│ 纯逻辑，纯 MoonBit  │           │ 系统调用拦截，Rust 实现        │
+│ check_domain()     │   Allow   │ wasmtime WASI 物理隔离        │
+│ check_path()       │←─────────│ Python 运行时沙箱监控          │
+│ check_env()        │   Deny    │ 静态源码扫描                  │
+│ 五层防御+缓存       │           │ MCP 端点 / Web 面板          │
 └────────────────────┘           └──────────────────────────────┘
-    策略判断层                         执行拦截层
 ```
 
-### 五层防御
-
-| 层 | 名称 | 实现 |
-|:--:|------|------|
-| 1 | 安装时声明审查 | 风险评分引擎 |
-| 2 | 域名/IP 黑名单 | HashMap O(1) + 后缀通配 + IP 前缀（45+规则）|
-| 3 | 路径 + 环境变量保护 | 精确 + 前缀 + KEY/SECRET/TOKEN 检测（60+模式）|
-| 4 | 工具黑名单 + 审计 | 即时封杀 + JSONL 持久化 + 策略热加载 |
-| 5 | Wasm 沙箱物理隔离 | Rust wasmtime WASI 零目录预打开 |
+---
 
 ## 快速开始
 
-```cmd
-cd D:\moonbit\aegisrun
-quickstart.cmd                    # 一键菜单
+### 静态扫描（推荐首选）
 
-moon run src/main                 # 策略引擎演示
-
+```bash
 cd runtime
-cargo run -- demo                 # Rust 策略引擎演示
-cargo run -- serve                # Web 面板（9090端口）
+cargo run -- scan malicious.py          # 扫描脚本中的违规行为
+cargo run -- demo                        # 14项策略引擎演示
+cargo run -- serve                       # Web 面板 (localhost:9090)
 ```
 
-## 文档导视
+### 运行时沙箱监控（检测编码/运行时逃逸）
 
-| 如果你... | 请阅读 |
-|-----------|--------|
-| **新手** — 想立刻跑起来 | [docs-ch/GUIDE.md](docs-ch/GUIDE.md)（新手入门） |
-| **开发者** — 集成库 | [docs-ch/GUIDE.md](docs-ch/GUIDE.md)（详情参考） |
-| **贡献者** — 提代码 | [docs-ch/CONTRIBUTING.md](docs-ch/CONTRIBUTING.md) |
-| **安全工程师** — 审计规则 | [docs-ch/SECURITY-POLICY.md](docs-ch/SECURITY-POLICY.md) |
-| **架构探索** — 理解设计 | [docs-ch/ARCHITECTURE.md](docs-ch/ARCHITECTURE.md) |
-| **版本追踪** — 看更新 | [docs-ch/CHANGELOG.md](docs-ch/CHANGELOG.md) |
-| **English speakers** | [docs-en/README.md](docs-en/README.md) |
-
-### 文档树
-
-```
-README.md                        ← 本文（项目概览）
-docs-ch/                          ← 中文文档（主版本）
-├── GUIDE.md                      使用指南（新手级 + 详情级）
-├── ARCHITECTURE.md               架构 + 调用链
-├── CONTRIBUTING.md               贡献指南
-├── CHANGELOG.md                  更新日志
-├── SECURITY-POLICY.md            安全策略
-└── DOCUMENTATION-GUIDE.md        文档规范
-docs-en/                          ← 英文文档（辅助版本）
-└── ...                           对应上述所有文档
+```bash
+cargo run -- sandbox-run malicious.py    # 在 Python audit hook 中执行
 ```
 
-## 命令速查
+### MoonBit 库调用
 
-| 命令 | 效果 |
-|------|------|
-| `moon run src/main` | MoonBit 策略引擎 + 演示 |
-| `cargo run -- demo` | Rust 策略引擎演示 |
-| `cargo run -- scan malware.py` | 扫描脚本找威胁 |
-| `cargo run -- sandbox tool.wasm` | WASI 物理隔离沙箱 |
-| `cargo run -- serve` | Web 面板（9090端口）|
-| `cargo run -- audit` | 审计日志 JSONL |
-| `cargo run -- verify tool.wasm id pub` | 工具签名验证 |
-
-### 库调用
+```bash
+moon add tuya-me/aegisrun
+```
 
 ```moonbit
-// MoonBit：moon add tuya-me/aegisrun
 let aegis = @lib.AegisRun::new("standard")
-aegis.check_domain("evil.com")          // → Deny
+aegis.check_domain("evil.com")           // → Deny
+aegis.check_env("OPENAI_API_KEY")        // → Deny
+aegis.check_http("https://evil.com")     // → Err (五层防御)
+```
+
+### Rust 库调用
+
+```bash
+cargo add aegisrun-runtime
 ```
 
 ```rust
-// Rust：cargo add aegisrun-runtime
 let policy = Policy::standard();
-policy.check_domain("evil.com");  // → false
+policy.check_domain("evil.com");         // → false
+policy.check_path("/etc/passwd");        // → false
 ```
 
-### MCP 集成
+### MCP 集成（AI Agent 直接调用）
 
 ```json
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
 ```
 
-5 个工具：sandbox / scan / check_domain / check_path / check_env
+---
+
+## 真实攻击拦截报告
+
+基于 2025-2026 年真实供应链攻击事件编写了 **10 类 60+ 测试样本**：
+
+| # | 攻击类型 | 对应真实事件 | 场景数 | 拦截 |
+|:-:|---------|-------------|:------:|:----:|
+| 1 | 直接凭证窃取 | TeamPCP Trivy 投毒 | 7 | ✅ 全拦 |
+| 2 | 变量间接引用 | SANDWORM_MODE typosquat | 8 | ✅ 全拦 |
+| 3 | 字符串拼接/f-string | GuardFall Class C | 5 | ⚠️ 部分 |
+| 4 | Base64/Hex 编码 | SkillCloak SFS Packing | 5 | ⚠️ 标记 |
+| 5 | Shell 命令注入 | GuardFall Class A-E | 8 | ✅ 全拦 |
+| 6 | Unicode 同形字 | TrapDoor 零宽字符 | 5 | ❌ 需运行时 |
+| 7 | 外部配置读取 | 恶意 npm postinstall | 5 | ❌ 需运行时 |
+| 8 | 云元数据 IMDS | CAI Cloud Worm | 8 | ✅ 全拦 |
+| 9 | eval/exec 构造 | SkillCloak 自解压 | 7 | ✅ 全拦 |
+| 10 | 真实攻击综合 | Shai-Hulud / TanStack | 8 | ✅ 全拦 |
+| | **总计** | | **66** | **~85%** |
+
+### 实际恶意代码拦截示例
+
+扫描 `real-world-attack.py`（模拟 TeamPCP 窃密工具）：
+
+```
+🔴 [env] DATABASE_URL      — 数据库连接串泄露
+🔴 [env] AWS_SECRET_ACCESS_KEY — 云凭证泄露
+🔴 [env] OPENAI_API_KEY    — LLM API Key 泄露
+🔴 [host] stealer.cc       — 恶意域名外泄
+4 violations — BLOCKED
+```
+
+运行时沙箱监控（检测 `open()` 等系统调用）：
+
+```
+🔴 [runtime-open] /etc/passwd       — BLOCKED at runtime
+🔴 [runtime-open] ~/.ssh/id_rsa     — BLOCKED at runtime
+```
+
+---
+
+## 沙箱行为监控
+
+### 原理
+
+在 **Python audit hook** 层面拦截脚本的敏感操作：
+
+```
+目标脚本 → Python exec
+            │
+            ├─ audit_hook("open", path)      → check_path() → DENY
+            ├─ audit_hook("socket.connect")   → check_domain() → DENY
+            └─ audit_hook("subprocess.Popen") → 检查命令内容 → BLOCKED
+```
+
+### 调用方式
+
+```bash
+cd runtime
+cargo run -- sandbox-run suspicious.py
+```
+
+### 输出报告
+
+```
+╔══════════════════════════════════════════════════╗
+║  AegisRun 沙箱运行报告                           ║
+║  静态扫描: 8 项 | 运行时: 2 项              ║
+╚══════════════════════════════════════════════════╝
+
+  🔴 [env] OPENAI_API_KEY       — BLOCKED (静态)
+  🔴 [runtime-open] /etc/passwd — BLOCKED (运行时)
+  ⚠️ [runtime-open] /tmp/data   — FLAGGED (仅记录)
+```
+
+---
+
+## 策略配置
+
+### 修改预设
+
+编辑 `presets/standard.yaml`：
+
+```yaml
+blacklist:
+  network:
+    domains:
+      - "evil.com"           # 已有
+      - "your-threat.cn"     # 新增自定义规则
+  env_vars:
+    - "YOUR_INTERNAL_KEY"    # 新增内部密钥模式
+```
+
+### CLI 临时封禁
+
+```bash
+cargo run -- policy block domain evil.com
+cargo run -- policy set strict
+cargo run -- policy show
+```
+
+### Web 面板可视化
+
+```bash
+cargo run -- serve
+# 浏览器 → http://localhost:9090
+```
+
+---
+
+## 文档导视
+
+| 如果你... | 请阅读 |
+|-----------|--------|
+| **新手** | [docs-ch/GUIDE.md](docs-ch/GUIDE.md) |
+| **开发者** | [docs-ch/GUIDE.md](docs-ch/GUIDE.md)（详情参考） |
+| **贡献者** | [docs-ch/CONTRIBUTING.md](docs-ch/CONTRIBUTING.md) |
+| **安全策略** | [docs-ch/SECURITY-POLICY.md](docs-ch/SECURITY-POLICY.md) |
+| **架构** | [docs-ch/ARCHITECTURE.md](docs-ch/ARCHITECTURE.md) |
+
+---
 
 ## 开源许可
 

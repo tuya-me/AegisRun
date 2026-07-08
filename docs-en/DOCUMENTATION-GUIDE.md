@@ -1,6 +1,6 @@
 # AegisRun Documentation Guide
 
-> v0.8.0
+> v1.0.0
 
 ---
 

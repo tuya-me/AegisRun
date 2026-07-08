@@ -1,6 +1,6 @@
 # AegisRun Contribution Guide
 
-> v0.8.0
+> v1.0.0
 
 ---
 
@@ -67,5 +67,5 @@ aegisrun/
 | Rust code | ~1,073 lines |
 | Dualities eliminated | 7 / 7 |
 | Call chain | ✅ Fully powered |
-| Version | v0.8.0 |
+| Version | v1.0.0 |
 | License | Apache 2.0 |

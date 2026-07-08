@@ -108,11 +108,33 @@ fn handle_mcp(request: &str, policy: &Policy) -> (&'static str, &'static str, St
 
     if body.contains("tools/call") && body.contains("check_domain") {
         let domain = extract_json_field(body, "domain").unwrap_or("unknown");
-        let allowed = policy.check_domain(domain); // ★ 使用实际策略，不再 new Policy::standard()
+        let allowed = policy.check_domain(domain);
         return ("200 OK", "application/json", serde_json::json!({
             "jsonrpc": "2.0", "id": 1,
             "result": {
                 "content": [{"type": "text", "text": format!("Domain '{}': {}", domain, if allowed {"ALLOW"}else{"DENY"})}]
+            }
+        }).to_string());
+    }
+
+    if body.contains("tools/call") && body.contains("check_path") {
+        let path = extract_json_field(body, "path").unwrap_or("unknown");
+        let allowed = policy.check_path(path);
+        return ("200 OK", "application/json", serde_json::json!({
+            "jsonrpc": "2.0", "id": 1,
+            "result": {
+                "content": [{"type": "text", "text": format!("Path '{}': {}", path, if allowed {"ALLOW"}else{"DENY"})}]
+            }
+        }).to_string());
+    }
+
+    if body.contains("tools/call") && body.contains("check_env") {
+        let varname = extract_json_field(body, "varname").unwrap_or("unknown");
+        let allowed = policy.check_env(varname);
+        return ("200 OK", "application/json", serde_json::json!({
+            "jsonrpc": "2.0", "id": 1,
+            "result": {
+                "content": [{"type": "text", "text": format!("Env '{}': {}", varname, if allowed {"ALLOW"}else{"DENY"})}]
             }
         }).to_string());
     }
@@ -128,8 +150,17 @@ fn serve_dashboard() -> (&'static str, &'static str, String) {
 }
 
 fn extract_json_field<'a>(json: &'a str, field: &str) -> Option<&'a str> {
-    let pattern = format!("\"{}\": \"", field);
-    let start = json.find(&pattern)? + pattern.len();
-    let end = json[start..].find('"')?;
-    Some(&json[start..start+end])
+    // Handle "field":"value" and "field": "value" and "field" : "value"
+    let pattern = format!("\"{}\"", field);
+    let field_pos = json.find(&pattern)?;
+    let after_field = &json[field_pos + pattern.len()..];
+    // Skip ": " or ":" or " : " etc.
+    let val_start = after_field.find(':')? + 1;
+    let after_colon = after_field[val_start..].trim_start();
+    if after_colon.starts_with('"') {
+        let end = after_colon[1..].find('"')?;
+        Some(&after_colon[1..1 + end])
+    } else {
+        None
+    }
 }

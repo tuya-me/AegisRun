@@ -15,6 +15,9 @@ blacklist:
       - "172.16.*"           # Private network
       - "127.0.0.1"          # Loopback
       - "localhost"          # Loopback
+      - "169.254.*"          # Link-local / cloud metadata (IMDS)
+      - "100.100.*"          # Alibaba Cloud metadata
+      - "*.internal"         # GCP internal metadata
       - "*.cn"               # Country-code TLD restriction
       - "*.ru"               # Country-code TLD restriction
       - "*.tk"               # Country-code TLD restriction

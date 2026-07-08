@@ -1,0 +1,7 @@
+import {
+  "tuya-me/aegisrun/lib",
+}
+
+options(
+  "is-main": true,
+)
