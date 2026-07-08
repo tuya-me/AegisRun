@@ -31,26 +31,10 @@ D:\moonbit\aegisrun\
 |------|------|
 | 语言 | 中文为主，英文为辅 |
 | 文档位置 | 中文文档统一在 `docs-ch/`，英文在 `docs-en/` |
-| 切换方式 | 每页顶部放置 `🇬🇧 English version →` 链接 |
 | 文件名 | 统一使用英文（GUIDE.md 而非 使用指南.md）|
 | 代码块 | 代码块语言无关，注释用中文 |
 | 隐私 | 不包含本地路径、个人凭证等敏感信息 |
 
-## 语言切换方式
-
-每篇中文文档顶部以链接方式指向英文版：
-
-```markdown
-# 标题
-> 🇬🇧 [English version →](docs-en/FILENAME.md)
-```
-
-英文文档同理指向中文版：
-
-```markdown
-# Title
-> 🇨🇳 [中文版 →](docs-ch/FILENAME.md)
-```
 
 ## 不提交到仓库的文件
 
