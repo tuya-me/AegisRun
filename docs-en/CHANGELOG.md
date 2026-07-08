@@ -1,7 +1,8 @@
 # AegisRun Changelog
 
----
+> 🇨🇳 [中文版 →](../docs-ch/CHANGELOG.md)
 
+---
 ## v0.8.0 (2026-07-08) — Architecture Duality Elimination
 
 - 7 architecture dualities eliminated: dual policy source, duplicate scanner, dual dashboard, scorer not via sandbox, SQL reconnect, dual persistence, fake MCP

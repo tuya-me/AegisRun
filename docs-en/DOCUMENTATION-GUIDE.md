@@ -1,6 +1,7 @@
 # AegisRun Documentation Guide
 
 > v0.8.0
+> 🇨🇳 [中文版 →](../docs-ch/DOCUMENTATION-GUIDE.md)
 ---
 
 ## Structure

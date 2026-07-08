@@ -1,5 +1,7 @@
 # AegisRun 更新日志
 
+> 🇬🇧 [English version →](../docs-en/CHANGELOG.md)
+
 
 ---
 

@@ -1,7 +1,8 @@
 # AegisRun Security Policy
 
----
+> 🇨🇳 [中文版 →](../docs-ch/SECURITY-POLICY.md)
 
+---
 ## Design Philosophy
 
 Core assumption: **third-party tools called by AI agents are untrusted**.

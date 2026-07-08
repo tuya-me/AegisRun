@@ -1,5 +1,6 @@
 # AegisRun 文档规范
 
+> 🇬🇧 [English version →](../docs-en/DOCUMENTATION-GUIDE.md)
 > v0.8.0 | 项目文档编写标准
 
 ---
