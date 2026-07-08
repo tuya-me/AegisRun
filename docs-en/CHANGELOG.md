@@ -1,7 +1,5 @@
 # AegisRun Changelog
 
-> 🇨🇳 [中文版 →](docs-ch/CHANGELOG.md)
-
 ---
 
 ## v0.8.0 (2026-07-08) — Architecture Duality Elimination
