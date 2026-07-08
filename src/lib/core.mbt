@@ -10,7 +10,15 @@
 pub enum Decision {
   Allow
   Deny
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+impl Show for Decision with to_string(self) {
+  match self {
+    Allow => "Allow"
+    Deny => "Deny"
+  }
+}
 
 ///|
 pub struct ToolInfo {
