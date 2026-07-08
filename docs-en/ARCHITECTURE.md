@@ -1,7 +1,6 @@
 # AegisRun Architecture
 
 > v0.8.0 | MoonBit 0.1.20260608
-> 🇨🇳 [中文版 →](docs-ch/ARCHITECTURE.md)
 
 ---
 
