@@ -1,4 +1,82 @@
-# AegisRun 安全策略
+# AegisRun Security Policy / 安全策略
+
+<style>
+.en { display: none; }
+.zh { display: block; }
+#en:target { display: block; }
+#en:target ~ .zh { display: none; }
+.lang-bar { text-align: center; margin: 16px 0; }
+.lang-btn { display: inline-block; padding: 6px 20px; background: #f0f0f0; border-radius: 20px; text-decoration: none; color: #333; font-size: 14px; margin: 0 4px; }
+.lang-btn:hover { background: #e0e0e0; }
+</style>
+
+<div class="lang-bar">
+<a href="#en" class="lang-btn">🇬🇧 English</a>
+<a href="#zh-cn" class="lang-btn">🇨🇳 中文</a>
+</div>
+
+---
+
+<div id="en" class="en">
+
+## Design Philosophy
+
+AegisRun is not another antivirus. Its core assumption: **third-party tools called by AI agents are untrusted**.
+
+Traditional security assumes a "malware vs. legitimate" binary. AegisRun addresses the gray zone — a tool may be harmless alone but dangerous in combination (read file + send network = data exfiltration).
+
+**Three principles:**
+
+1. **Declaration is constraint**: tools must declare capabilities upfront; undeclared = denied
+2. **Combination detection**: individually harmless capabilities can be dangerous together
+3. **Defense in depth**: every operation is checked at both the MoonBit policy layer and Rust sandbox layer
+
+## Policy File
+
+All default rules are maintained in a single file:
+
+```
+src/lib/core.mbt  ← Single maintenance point
+  ├─ default_domain_blacklist()   → 7 malicious domains
+  ├─ default_domain_suffixes()    → 3 suffix TLDs
+  ├─ default_ip_prefixes()        → 3 private IP ranges
+  ├─ default_domain_whitelist()   → 2 trusted domains
+  ├─ default_sensitive_paths()    → 22 sensitive paths
+  ├─ default_env_patterns()       → 36 env var patterns
+  ├─ env_keywords()               → 5 keywords
+  ├─ default_timeout_ms()         → 30000
+  └─ default_memory_kb()          → 262144
+```
+
+## Policy Call Chain Per Layer
+
+| Layer | Entry | Policy Source | Policy Function |
+|-------|-------|--------------|-----------------|
+| 1. Installation review | `scorer.mbt:36` | Built-in scoring | `score_manifest()` |
+| 2. Domain/IP | `core.mbt` ← `sandbox.mbt:78` | `core.mbt` defaults | `check_domain()` |
+| 3. Path | `core.mbt` ← `sandbox.mbt` + `lib.rs:83` | `core.mbt` defaults | `check_path()` |
+| 3. Env var | `core.mbt` ← `lib.rs:91` | `core.mbt` defaults | `check_env()` |
+| 4. Tool blacklist | `core.mbt:141` ← `aegisrun.mbt:192` | Runtime dynamic | `check_tool_id()` |
+| 5. WASI sandbox | `sandbox.rs` (Rust) | No policy needed | wasmtime zero preopens |
+
+## Threat Intelligence Sources
+
+| Category | Source | Description |
+|----------|--------|-------------|
+| C2 server IPs | abuse.ch / AlienVault OTX | Known malware C2 servers |
+| Malware distribution | URLhaus / MalwareBazaar | Malicious sample hosting URLs |
+| Phishing domains | PhishTank / OpenPhish | Cross-verified phishing sites |
+| Scanners | GreyNoise / Shodan | Internet background noise |
+| Tor exit nodes | Tor Project | Anonymous network exit nodes |
+| Private networks | RFC 1918 / RFC 6598 | Internal network prevention |
+| Free domain TLDs | IANA | `.tk` `.ml` `.ga` `.cf` (high phishing) |
+| Country TLDs | IANA | `*.cn` `*.ru` (on-demand) |
+
+See the Chinese section below for detailed extension guides and audit procedures.
+
+</div>
+
+<div class="zh">
 
 ## 设计思路
 
@@ -34,10 +112,10 @@ src/lib/core.mbt  ← 唯一维护点（v0.8.0 合并至此）
 | 拦截层 | 入口文件 | 策略来源 | 策略函数 |
 |--------|----------|----------|----------|
 | 1. 安装审查 | `scorer.mbt:36` | 内置评分规则 | `score_manifest()` |
-| 2. 域名/IP | `core.mbt` ← `sandbox.mbt:78` | `core.mbt` → `default_domain_blacklist/suffixes/ip_prefixes` | `check_domain()` |
-| 3. 路径 | `core.mbt` ← `sandbox.mbt` + `lib.rs:83` | `core.mbt` → `default_sensitive_paths` | `check_path()` |
-| 3. 环境变量 | `core.mbt` ← `lib.rs:91` | `core.mbt` → `default_env_patterns/env_keywords` | `check_env()` |
-| 4. 工具黑名单 | `core.mbt:141` ← `aegisrun.mbt:192` | 运行时 `block()` 动态添加 | `check_tool_id()` |
+| 2. 域名/IP | `core.mbt` ← `sandbox.mbt:78` | `core.mbt` 默认规则 | `check_domain()` |
+| 3. 路径 | `core.mbt` ← `sandbox.mbt` + `lib.rs:83` | `core.mbt` 默认规则 | `check_path()` |
+| 3. 环境变量 | `core.mbt` ← `lib.rs:91` | `core.mbt` 默认规则 | `check_env()` |
+| 4. 工具黑名单 | `core.mbt:141` ← `aegisrun.mbt:192` | 运行时动态添加 | `check_tool_id()` |
 | 5. WASI 沙箱 | `sandbox.rs`（Rust）| 不依赖策略文件 | wasmtime 零目录预打开 |
 
 ## 规则数据来源
@@ -102,10 +180,12 @@ grep "weather-query" aegisrun-audit.jsonl
 
 # 2. 查看当前策略
 moon run src/main show
-:: 或
+# 或
 type policy.json
 
 # 3. 按日志中的 reason 定位是哪个规则触发，自行调整策略后 moon run src/main 验证
 ```
 
-日志和策略配置足以自行定位绝大部份拦截问题。版本变更记录见 [CHANGELOG.md](../CHANGELOG.md)。
+日志和策略配置足以自行定位绝大部分拦截问题。版本变更记录见 [CHANGELOG.md](CHANGELOG.md)。
+
+</div>

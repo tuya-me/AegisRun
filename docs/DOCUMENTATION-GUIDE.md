@@ -1,92 +1,146 @@
-# AegisRun 文档存放规范
+# AegisRun Documentation Guide / 文档规范
 
-> v0.2.0 | 2026-06-22
+> v0.8.0 | Standard for all project documentation / 项目所有文档的编写标准
+
+<style>
+.en { display: none; }
+.zh { display: block; }
+#en:target { display: block; }
+#en:target ~ .zh { display: none; }
+.lang-bar { text-align: center; margin: 16px 0; }
+.lang-btn { display: inline-block; padding: 6px 20px; background: #f0f0f0; border-radius: 20px; text-decoration: none; color: #333; font-size: 14px; margin: 0 4px; }
+.lang-btn:hover { background: #e0e0e0; }
+</style>
+
+<div class="lang-bar">
+<a href="#en" class="lang-btn">🇬🇧 English</a>
+<a href="#zh-cn" class="lang-btn">🇨🇳 中文</a>
+</div>
 
 ---
 
-## 文档分类
+<div id="en" class="en">
 
-### 公开文档 → GitLink 仓库 `D:\moonbit\aegisrun\`
+## Structure
 
-推送到 `https://gitlink.org.cn/tuya/AegisRun`，评审可见。
+All public documentation lives under `docs/`. The only `.md` file at the project root is `README.md`.
 
 ```
 D:\moonbit\aegisrun\
-├── README.md                    ← 项目首页（简体中文，含快速开始+调用方式）
-├── CHANGELOG.md                 ← 版本更新日志
-├── policy.example.yaml          ← 策略配置示例
-├── presets/                     ← 安全预设模板
-│   ├── strict.yaml
-│   ├── standard.yaml
-│   └── permissive.yaml
-└── docs/                        ← 详细设计文档
-    ├── DOCUMENTATION-GUIDE.md   ← 本文档
-    ├── ARCHITECTURE.md          ← 架构文档（完整调用链+数据结构）
-    └── SECURITY-POLICY.md       ← 安全策略白皮书
+├── README.md                    ← Project overview (architecture + navigation)
+│
+└── docs/                        ← All other documentation
+    ├── GUIDE.md                    User guide (beginner + detailed levels, bilingual)
+    ├── ARCHITECTURE.md             Full call chain + data structures
+    ├── CONTRIBUTING.md             Developer contribution guide
+    ├── CHANGELOG.md                Version history
+    ├── SECURITY-POLICY.md          Security policy whitepaper
+    └── DOCUMENTATION-GUIDE.md      This file
 ```
 
-**规则**：
-- `*.md` 全部用简体中文撰写
-- 文件名全大写
-- 不包含本地路径、个人凭证等敏感信息
+## Conventions
 
----
+| Item | Rule |
+|------|------|
+| Language | All docs bilingual (English + Chinese) |
+| Toggle | Every page has a CN/EN toggle bar at top using CSS `:target` |
+| Filename | English uppercase for root docs; English for docs/ |
+| Content | Code blocks are language-agnostic; text alternates by section |
+| Sensitive info | No local paths, credentials, or internal details |
 
-### 本地私有文档 → `D:\moonbit\md\`
+## Language Toggle Mechanism
 
-**不推送**，仅本地参考。
+Each documentation page uses the CSS `:target` pseudo-class to switch between English and Chinese:
+
+```html
+<style>
+.en { display: none; }
+.zh { display: block; }
+#en:target { display: block; }
+#en:target ~ .zh { display: none; }
+</style>
+
+<a href="#en">🇬🇧 English</a>
+<a href="#zh-cn">🇨🇳 中文</a>
+
+<div id="en" class="en">...English...</div>
+<div class="zh">...中文...</div>
+```
+
+- Default: shows Chinese
+- Click "English": URL hash becomes `#en` → English visible, Chinese hidden
+- Click "中文": URL hash becomes `#zh-cn` → Chinese visible
+- Graceful degradation: if CSS is not supported, both languages display stacked
+
+## Not in Repository (Local Only / Private)
+
+- OSC2026 competition proposal: `D:\moonbit\md\01-参赛方案.md`
+- Project declaration: `D:\moonbit\md\02-项目申报书.md`
+- Presentation slides: `D:\moonbit\md\03-演示PPT.pptx`
+
+These are excluded from git and kept locally.
+
+</div>
+
+<div class="zh">
+
+## 文档结构
+
+所有公开文档统一放在 `docs/` 目录下，项目根目录只保留 `README.md`。
 
 ```
-D:\moonbit\md\
-├── 01-参赛方案.md               ← OSC2026 参赛方案（含敏感策略细节）
-├── 02-项目申报书.md / .docx     ← 项目申报书（含联系方式）
-├── 03-演示PPT.pptx              ← 竞赛演示幻灯片
-└── AegisRun_AI_Agent_参赛方案.md(备份)
+D:\moonbit\aegisrun\
+├── README.md                    ← 项目概览（架构 + 文档导视）
+│
+└── docs/                        ← 所有其他文档
+    ├── GUIDE.md                    使用指南（新手级 + 详情级，中英双语）
+    ├── ARCHITECTURE.md             架构 + 完整调用链 + 数据结构
+    ├── CONTRIBUTING.md             开发者贡献指南
+    ├── CHANGELOG.md                版本更新日志
+    ├── SECURITY-POLICY.md          安全策略白皮书
+    └── DOCUMENTATION-GUIDE.md      本文档
 ```
 
-**规则**：
-- `01-` `02-` 前缀按重要程度排序
-- `.md` 格式优先，`.docx`/`.pptx` 仅在需要格式富文本时保留
-- 此目录**已被 .gitignore 排除**（或在仓库外）
+## 编写规范
 
----
+| 项目 | 规则 |
+|------|------|
+| 语言 | 全部文档中英双语 |
+| 切换 | 每页顶部有 CN/EN 切换按钮，使用 CSS `:target` 实现 |
+| 文件名 | 统一使用英文 |
+| 内容 | 代码块语言无关；文本按章节交替中英文 |
+| 隐私 | 不包含本地路径、个人凭证等敏感信息 |
 
-### 不应提交到 Git 的文件
+## 语言切换机制
 
-| 类型 | 位置 | 原因 |
-|------|------|------|
-| `target/` | 编译产物 | 已 .gitignore |
-| `_build/` | 中间构建 | 已 .gitignore |
-| `*.log` | 日志 | 已 .gitignore |
-| `gen_*.py` | 临时生成脚本 | 用完即删 |
+每页文档通过 CSS `:target` 伪类实现中英文切换：
 
----
+```html
+<style>
+.en { display: none; }
+.zh { display: block; }
+#en:target { display: block; }
+#en:target ~ .zh { display: none; }
+</style>
 
-## 命名规范
+<a href="#en">🇬🇧 English</a>
+<a href="#zh-cn">🇨🇳 中文</a>
 
-| 类型 | 格式 | 示例 |
-|------|------|------|
-| 项目首页 | `README.md` | `README.md` |
-| 变更日志 | `CHANGELOG.md` | `CHANGELOG.md` |
-| 架构文档 | `docs/ARCHITECTURE.md` | `docs/ARCHITECTURE.md` |
-| 安全策略 | `docs/SECURITY-POLICY.md` | `docs/SECURITY-POLICY.md` |
-| 参赛方案 | `md/01-参赛方案.md` | `md/01-参赛方案.md` |
-| 申报书 | `md/02-项目申报书.md` | `md/02-项目申报书.md` |
-| 演示PPT | `md/03-演示PPT.pptx` | `md/03-演示PPT.pptx` |
+<div id="en" class="en">...English content...</div>
+<div class="zh">...中文内容...</div>
+```
 
----
+- 默认显示中文
+- 点击 English → URL hash 变为 `#en` → 显示英文，隐藏中文
+- 点击 中文 → URL hash 变为 `#zh-cn` → 显示中文
+- 降级处理：若 CSS 不支持，两种语言同时显示
 
-## 当前文档清单
+## 不提交到仓库的文件
 
-| 文档 | 位置 | 公开? | 内容 | 最后更新 |
-|------|------|:--:|------|:--:|
-| README | aegisrun/ | ✅ | 项目说明+快速开始+调用方式 | 2026-07-05 |
-| GUIDE | aegisrun/ | ✅ | 新手指南 | ✅ |
-| CHANGELOG | aegisrun/ | ✅ | v0.1.0~v0.5.0 变更 | ✅ 已更新 |
-| ARCHITECTURE | aegisrun/docs/ | ✅ | 完整调用链+数据结构 | ✅ 已更新 |
-| CONTRIBUTING | aegisrun/docs/ | ✅ | 开发者指南+贡献方向 | ✅ 已标注完成项 |
-| 使用指南 | aegisrun/docs/ | ✅ | 详细调用方式 | ✅ |
-| DOCUMENTATION-GUIDE | aegisrun/docs/ | ✅ | 本文档 | ✅ |
-| 参赛方案 | md/ | ❌ | OSC2026 参赛方案全文 | — |
-| 项目申报书 | md/ | ❌ | 附录二格式申报书 | — |
-| 演示PPT | md/ | ❌ | 演示幻灯片 | — |
+- OSC2026 参赛方案：`D:\moonbit\md\01-参赛方案.md`
+- 项目申报书：`D:\moonbit\md\02-项目申报书.md`
+- 演示 PPT：`D:\moonbit\md\03-演示PPT.pptx`
+
+以上文件仅在本地，已通过 .gitignore 排除。
+
+</div>
