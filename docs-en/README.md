@@ -2,8 +2,6 @@
 
 **AI Agent Secure Tool Execution Framework — MoonBit Policy Engine + Rust Sandbox Runtime**
 
-> 🇨🇳 [中文版 →](../README.md)
-
 [![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260608-blue)](https://moonbitlang.com)
 [![Rust](https://img.shields.io/badge/Rust-wasmtime%2039-orange)](https://github.com/tuya-me/AegisRun/tree/clean-v2/runtime)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
