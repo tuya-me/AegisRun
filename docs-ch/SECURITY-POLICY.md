@@ -1,6 +1,5 @@
 # AegisRun 安全策略
 
-> 🇬🇧 [English version →](docs-en/SECURITY-POLICY.md)
 
 ---
 
