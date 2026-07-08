@@ -1,7 +1,5 @@
 # AegisRun 更新日志
 
-> 🇬🇧 [English version →](docs-en/CHANGELOG.md)
-
 ---
 
 ## v0.8.0 (2026-07-08) — 消除架构二重性
