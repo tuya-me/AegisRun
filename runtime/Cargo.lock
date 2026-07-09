@@ -16,6 +16,7 @@ name = "aegisrun-runtime"
 version = "0.6.0"
 dependencies = [
  "anyhow",
+ "base64",
  "serde",
  "serde_json",
  "serde_yaml",
