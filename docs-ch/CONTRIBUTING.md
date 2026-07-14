@@ -1,7 +1,7 @@
 # AegisRun 开发者贡献指南
 
 > 🇬🇧 [English version →](../docs-en/CONTRIBUTING.md)
-> v0.8.0 | 如何参与开发 | 可贡献方向 | 代码规范
+> v0.9.2 | 如何参与开发 | 可贡献方向 | 代码规范
 
 ---
 
@@ -131,5 +131,5 @@ git push origin feature/xxx
 | 五层调用链全部通电 | ✅ |
 | 测试覆盖 | MoonBit 6 测试 + Rust 14 用例 |
 | wasmtime WASI | ✅ 物理隔离已验证 |
-| 版本 | v0.8.0 |
+| 版本 | v0.9.2 |
 | 许可证 | Apache 2.0 |

