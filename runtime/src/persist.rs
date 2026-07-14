@@ -73,6 +73,7 @@ struct PolicyFile {
     blocked_env_patterns: Vec<String>,
 }
 
+#[allow(dead_code)]
 pub fn save_policy(policy: &Policy, path: &str) -> Result<(), String> {
     let pf = PolicyFile {
         preset: policy.preset.clone(),

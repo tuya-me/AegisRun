@@ -21,3 +21,6 @@ runtime/target/
 *.pfx
 credentials.*
 secrets.*
+
+# Runtime artifacts
+runtime/aegisrun-audit.jsonl

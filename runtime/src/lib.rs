@@ -144,13 +144,17 @@ impl Policy {
 
     /// 检查路径: true=放行（exact == + prefix starts_with）
     pub fn check_path(&self, path: &str) -> bool {
+        let normalized = path.replace('\\', "/");
         for b in &self.blocked_paths {
-            if b == "*" || path == b.as_str() { return false; }
+            let blocked = b.replace('\\', "/");
+            if blocked == "*" || normalized == blocked { return false; }
             // ponytail: "/" as exact path in strict mode → also blocks all absolute paths
-            if b == "/" && path.starts_with('/') { return false; }
+            if blocked == "/" && normalized.starts_with('/') { return false; }
+            if wildcard_match(&blocked, &normalized) { return false; }
         }
         for pr in &self.path_prefixes {
-            if pr.is_empty() || path.starts_with(pr.as_str()) { return false; }
+            let prefix = pr.replace('\\', "/");
+            if prefix.is_empty() || normalized.starts_with(prefix.as_str()) { return false; }
         }
         true
     }
@@ -194,40 +198,145 @@ pub fn sandbox_getenv(policy: &Policy, var: &str) -> Result<String, String> {
     std::env::var(var).map_err(|_| "env not set".to_string())
 }
 
+/// Runtime network guard. Call this before DNS, HTTP, or socket access.
+pub fn sandbox_connect_domain(policy: &Policy, domain: &str) -> Result<(), String> {
+    if !policy.check_domain(domain) {
+        return Err(format!("BLOCKED: domain '{}' denied by security policy", domain));
+    }
+    Ok(())
+}
+
 // ═══════════════════════════════════════
 // 脚本扫描器
 // ═══════════════════════════════════════
 
 /// 扫描脚本源码，返回安全违规列表
+/// 全面扫描: 不依赖特定函数调用，扫描所有行的字符串/域名/路径
 pub fn scan_script(source: &str) -> Vec<ScanFinding> {
     let policy = Policy::standard();
     let mut findings = Vec::new();
+    let sensitive_commands = ["curl ", "wget ", "ssh ", "scp ", "sftp ", "telnet ", "nc "];
 
     for (i, line) in source.lines().enumerate() {
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with("//") { continue; }
 
-        // 检测文件操作
-        if trimmed.contains("open(") {
-            for s in extract_strings(trimmed) {
-                if looks_like_path(&s) && !policy.check_path(&s) {
-                    findings.push(ScanFinding { line: i+1, kind: "path".into(), value: s, blocked: true });
+        let strings = extract_strings(trimmed);
+        let hosts = extract_hosts(trimmed);
+
+        // 1. 扫描所有字符串: 检查是否是敏感环境变量名
+        for s in &strings {
+            if is_env_var_name(s) && !policy.check_env(s) {
+                findings.push(ScanFinding { line: i+1, kind: "env".into(), value: s.clone(), blocked: true });
+            }
+            if s.contains(' ') || s.contains('/') {
+                for token in s.split(&[' ', '/', '\t', ':'][..]) {
+                    let t = token.trim();
+                    if is_env_var_name(t) && !policy.check_env(t) {
+                        findings.push(ScanFinding { line: i+1, kind: "env".into(), value: t.to_string(), blocked: true });
+                        break;
+                    }
                 }
             }
         }
-        // 检测环境变量
-        if trimmed.contains("environ.get(") || trimmed.contains("getenv(") {
-            for s in extract_strings(trimmed) {
-                if is_env_var_name(&s) && !policy.check_env(&s) {
-                    findings.push(ScanFinding { line: i+1, kind: "env".into(), value: s, blocked: true });
+
+        // 2. 检查 shell 命令中的嵌入路径
+        for s in &strings {
+            if looks_like_path(s) && !policy.check_path(s) {
+                findings.push(ScanFinding { line: i+1, kind: "path".into(), value: s.clone(), blocked: true });
+            }
+            if s.contains(' ') {
+                for token in s.split_whitespace() {
+                    if looks_like_path(token) && !policy.check_path(token) {
+                        findings.push(ScanFinding { line: i+1, kind: "path".into(), value: token.to_string(), blocked: true });
+                        break;
+                    }
                 }
             }
         }
-        // 检测域名
-        if trimmed.contains("http://") || trimmed.contains("https://") {
-            for host in extract_hosts(trimmed) {
-                if !policy.check_domain(&host) {
-                    findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host, blocked: true });
+
+        // 3. 敏感 shell 命令 + subprocess URL 检测
+        for cmd in &sensitive_commands {
+            if trimmed.contains(cmd) {
+                for s in &strings {
+                    for token in s.split_whitespace() {
+                        if token.starts_with("http://") || token.starts_with("https://") {
+                            for host in extract_hosts(token) {
+                                if !policy.check_domain(&host) {
+                                    findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
+                                }
+                            }
+                        }
+                        if looks_like_path(token) && !policy.check_path(token) {
+                            findings.push(ScanFinding { line: i+1, kind: "path".into(), value: token.to_string(), blocked: true });
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        // 4a. 敏感编码函数调用
+        let encoding_funcs = ["base64.b64decode", "binascii.unhexlify", "unhexlify",
+                              "base64_decode", "fromhex", "translate("];
+        for func in &encoding_funcs {
+            if trimmed.contains(func) {
+                for s in &strings {
+                    if is_env_var_name(s) && !policy.check_env(s) {
+                        findings.push(ScanFinding { line: i+1, kind: "encoded-env".into(), value: s.clone(), blocked: false });
+                    }
+                }
+                findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: format!("encoding call: {}", func), blocked: false });
+            }
+        }
+
+        // 4b. 解码 base64 并检查解码后的内容
+        for s in &strings {
+            if s.len() >= 8 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '=') {
+                if let Some(decoded) = try_decode_base64(s) {
+                    let norm = normalize_homoglyphs(&decoded);
+                    if is_env_var_name(&norm) && !policy.check_env(&norm) {
+                        findings.push(ScanFinding { line: i+1, kind: "env".into(), value: norm.clone(), blocked: true });
+                    }
+                    if looks_like_path(&norm) && !policy.check_path(&norm) {
+                        findings.push(ScanFinding { line: i+1, kind: "path".into(), value: norm.clone(), blocked: true });
+                    }
+                }
+            }
+        }
+
+        // 4c. config/dynamic URL/env 检测
+        if ["configparser", "json.load(", "yaml.load(", "yaml.safe_load(", "config.read(", "config.get("].iter().any(|f| trimmed.contains(f)) {
+            findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: "external config read".into(), blocked: false });
+        }
+        if trimmed.contains("f\"https://") || trimmed.contains("f'https://") {
+            findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: "dynamic URL f-string".into(), blocked: true });
+        }
+        if (trimmed.contains("os.environ.get(") || trimmed.contains("environ.get(")) && !strings.iter().any(|s| is_env_var_name(s)) {
+            findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: "dynamic env var read".into(), blocked: true });
+        }
+
+        // 4d. 预编译字节码检测
+        for func in &["compile(", "py_compile", ".pyc", "marshal.loads(", "pickle.loads("] {
+            if trimmed.contains(func) {
+                findings.push(ScanFinding { line: i+1, kind: "suspicious".into(), value: format!("bytecode: {}", func), blocked: false });
+            }
+        }
+
+        // 5. 扫描所有提取的域名 + IP
+        for host in &hosts {
+            if !policy.check_domain(host) {
+                findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
+            }
+        }
+
+        // 6. 检测裸域名（未带 http:// 的纯域名字符串）
+        for s in &strings {
+            let dots = s.chars().filter(|&c| c == '.').count();
+            if (1..=3).contains(&dots) && !s.contains(' ') && s.len() > 5 {
+                let host = normalize_homoglyphs(s);
+                if host.as_str() != s.as_str() && !policy.check_domain(&host) {
+                    findings.push(ScanFinding { line: i+1, kind: "host".into(), value: host.clone(), blocked: true });
                 }
             }
         }
@@ -235,12 +344,15 @@ pub fn scan_script(source: &str) -> Vec<ScanFinding> {
     findings
 }
 
+#[derive(Clone)]
 pub struct ScanFinding {
     pub line: usize,
     pub kind: String,
     pub value: String,
     pub blocked: bool,
 }
+
+pub mod sandbox_monitor;
 
 // ── 辅助 ──
 fn extract_strings(line: &str) -> Vec<String> {
@@ -253,19 +365,77 @@ fn extract_strings(line: &str) -> Vec<String> {
     }
     results
 }
-fn looks_like_path(s: &str) -> bool { s.starts_with('/') || s.starts_with('~') || s.contains(":\\") || s.ends_with(".json") }
-fn is_env_var_name(s: &str) -> bool { s.chars().all(|c| c.is_uppercase() || c == '_' || c.is_numeric()) && s.len() > 3 && s.contains('_') }
+fn normalize_homoglyphs(s: &str) -> String {
+    s.chars().map(|c| match c {
+        'е' => 'e', 'Е' => 'E', 'а' => 'a', 'А' => 'A',
+        'о' => 'o', 'О' => 'O', 'с' => 'c', 'С' => 'C',
+        'р' => 'p', 'Р' => 'P', 'х' => 'x', 'Х' => 'X',
+        'і' => 'i', 'І' => 'I', 'В' => 'B', 'К' => 'K',
+        'М' => 'M', 'Н' => 'H', 'Т' => 'T', 'У' => 'Y',
+        _ if c == '\u{200b}' || c == '\u{200c}' || c == '\u{200d}' || c == '\u{feff}' || c == '\u{2060}' => ' ',
+        _ => c,
+    }).collect()
+}
+
+fn try_decode_base64(s: &str) -> Option<String> {
+    use base64::Engine as _;
+    let engine = base64::engine::general_purpose::STANDARD;
+    if let Ok(bytes) = engine.decode(s) {
+        if let Ok(text) = String::from_utf8(bytes) {
+            if text.len() > 3 { return Some(text); }
+        }
+    }
+    None
+}
+fn looks_like_path(s: &str) -> bool { let n = normalize_homoglyphs(s); n.starts_with('/') || n.starts_with('~') || n.contains(":\\") || n.ends_with(".json") }
+fn is_env_var_name(s: &str) -> bool { let n = normalize_homoglyphs(s); n.chars().all(|c| c.is_uppercase() || c == '_' || c.is_numeric()) && n.len() > 3 && n.contains('_') }
 fn extract_hosts(line: &str) -> Vec<String> {
     let mut hosts = Vec::new();
     for s in extract_strings(line) {
         for prefix in &["https://", "http://"] {
             if let Some(rest) = s.strip_prefix(prefix) {
-                let host = rest.split('/').next().unwrap_or(rest).split(':').next().unwrap_or(rest);
-                if !host.is_empty() { hosts.push(host.to_string()); }
+                let raw = rest.split('/').next().unwrap_or(rest).split(':').next().unwrap_or(rest);
+                let host = normalize_homoglyphs(raw);
+                if !host.is_empty() && !host.chars().any(|c| c > '\u{007f}') { hosts.push(host); }
             }
         }
     }
     hosts
+}
+
+fn wildcard_match(pattern: &str, value: &str) -> bool {
+    if !pattern.contains('*') {
+        return pattern == value;
+    }
+
+    let parts: Vec<&str> = pattern.split('*').collect();
+    let mut pos = 0usize;
+
+    if let Some(first) = parts.first() {
+        if !first.is_empty() {
+            if !value.starts_with(first) {
+                return false;
+            }
+            pos = first.len();
+        }
+    }
+
+    for part in parts.iter().skip(1).take(parts.len().saturating_sub(2)) {
+        if part.is_empty() {
+            continue;
+        }
+        match value[pos..].find(part) {
+            Some(i) => pos += i + part.len(),
+            None => return false,
+        }
+    }
+
+    if let Some(last) = parts.last() {
+        if !last.is_empty() {
+            return value[pos..].ends_with(last);
+        }
+    }
+    true
 }
 
 // ═══════════════════════════════════════
@@ -303,6 +473,8 @@ mod tests {
         assert!(!p.check_path("/etc/shadow"));
         assert!(!p.check_path("~/.ssh/id_rsa"));
         assert!(!p.check_path("~/.aws/credentials"));
+        assert!(!p.check_path("/home/user/project/.env"));
+        assert!(!p.check_path("C:\\Users\\alice\\AppData\\Roaming\\npm\\npmrc"));
     }
 
     #[test]
@@ -328,6 +500,13 @@ mod tests {
         assert!(p.check_env("USER"));
         assert!(p.check_env("LANG"));
         assert!(p.check_env("HOME"));
+    }
+
+    #[test]
+    fn test_runtime_network_guard() {
+        let p = Policy::standard();
+        assert!(sandbox_connect_domain(&p, "api.github.com").is_ok());
+        assert!(sandbox_connect_domain(&p, "evil.com").is_err());
     }
 
     #[test]
