@@ -98,4 +98,4 @@ True physical isolation: zero preopens + filtered env. Not a policy Deny, WASI l
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
 ```
 
-5 tools: `sandbox`, `scan`, `check_domain`, `check_path`, `check_env`.
+9 tools: `policy.summary`, `policy.check_domain`, `policy.check_path`, `policy.check_env`, `guard_tool_call`, `scan_code`, `scan_file`, `sandbox_python`, `sandbox_wasm`.

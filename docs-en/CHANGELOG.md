@@ -3,6 +3,24 @@
 > 🇨🇳 [中文版 →](../docs-ch/CHANGELOG.md)
 
 ---
+## v0.9.2 (2026-07-14) — MCP Rewrite + Runtime Sandbox + Dashboard Redesign
+
+### Added
+- **MCP tools expanded from 5 to 9**: `policy.summary`, `guard_tool_call`, `scan_code`, `sandbox_python`, `sandbox_wasm`
+- **MCP JSON-RPC normalization**: proper id echo, error codes, inputSchema
+- **`/api/sandbox-run` endpoint**: web panel supports Python runtime sandbox (static + runtime merge)
+- **Interactive MCP tool caller** in dashboard: select tool, fill args, call directly
+- **Dashboard visual separation**: Web management / Sandbox / MCP Agent zones
+- **Dual sandbox mode**: Static Scan / Runtime Sandbox toggle
+- **`sandbox_connect_domain`**: Rust runtime network guard
+- **Wildcard path matching**: `wildcard_match` supports `*`
+
+### Fixed
+- `production-check` example clippy warning
+- Sandbox monitor: full monkey-patch of `os.getenv`/`os.environ`/`socket.connect`/`subprocess.Popen`
+- Path backslash normalization
+
+---
 ## v0.8.0 (2026-07-08) — Architecture Duality Elimination
 
 - 7 architecture dualities eliminated: dual policy source, duplicate scanner, dual dashboard, scorer not via sandbox, SQL reconnect, dual persistence, fake MCP

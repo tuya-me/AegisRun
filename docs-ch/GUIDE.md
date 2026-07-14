@@ -203,7 +203,7 @@ aegisrun.exe serve    # 然后打开 http://localhost:9090
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
 ```
 
-5 个工具：sandbox / scan / check_domain / check_path / check_env
+9 个工具：policy.summary / policy.check_domain / policy.check_path / policy.check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm
 
 > **注意：** MCP 在 Rust 侧运行。MoonBit 编译为 Wasm，无 TCP 能力。
 > 启动方式：`cd runtime && cargo run -- serve`

@@ -5,6 +5,25 @@
 
 ---
 
+## v0.9.2 (2026-07-14) — MCP 重写 + 运行时沙箱 + 面板重设计
+
+### 新增
+- **MCP 工具从 5 扩展到 9**：新增 `policy.summary`、`guard_tool_call`、`scan_code`、`sandbox_python`、`sandbox_wasm`
+- **MCP JSON-RPC 规范化**：正确 id 回显、错误码、inputSchema
+- **`/api/sandbox-run` 端点**：Web 面板支持 Python 运行时沙箱检测（静态 + runtime 合并）
+- **Dashboard MCP 交互调用面板**：选工具、填参数、直接调用
+- **Dashboard 视觉分离**：Web 管理区 / Sandbox 区 / MCP Agent 区明确分区
+- **沙箱双模式切换**：Static Scan / Runtime Sandbox
+- **`sandbox_connect_domain`**：Rust 运行时网络守卫
+- **路径通配匹配**：`wildcard_match` 支持 `*`
+
+### 修复
+- `production-check` 示例 clippy 警告
+- Sandbox monitor：`os.getenv`/`os.environ`/`socket.connect`/`subprocess.Popen` 全 monkey-patch
+- 路径反斜杠归一化
+
+---
+
 ## v0.8.0 (2026-07-08) — 消除架构二重性
 
 - **7 项架构二重性消除**：策略数据双源、重复扫描器、仪表盘双份、评分不经过沙箱、SQL 每次新建连接、策略持久化双通道、MCP 虚假承诺
