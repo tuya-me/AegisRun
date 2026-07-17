@@ -9,7 +9,7 @@ pub enum MonitorLevel {
   Warning
   Degraded
   Critical
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct MonitorConfig {
