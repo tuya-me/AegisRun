@@ -23,8 +23,10 @@ aegisrun/
 ├── runtime/                 Rust 库 + CLI
 │   ├── src/lib.rs           核心库（Policy + sandbox + scanner）
 │   ├── src/main.rs          CLI 工具（aegisrun.exe）
-│   ├── src/sandbox.rs       wasmtime WASI 物理隔离沙箱
+│   ├── src/server_main.rs   守护进程入口（aegisrund）
 │   ├── src/server.rs        Web 面板 + MCP 端点
+│   ├── src/sandbox.rs       wasmtime WASI 物理隔离沙箱
+│   ├── src/sandbox_monitor.rs  运行时沙箱监控
 │   ├── src/persist.rs       审计日志 + 策略持久化 + 热加载
 │   └── src/verify.rs        工具签名验证
 │
@@ -103,6 +105,8 @@ moon run src/demo/intercept.mbt  # 运行演示
 moon test            # 测试
 ```
 
+> **Windows 说明：** `moon test`（wasm/wasm-gc 目标）在旧版 Windows 10 上可能因 WASM 运行时 DLL 兼容性问题失败。可使用 `moon test --target js` 替代——它验证的是相同的 MoonBit 逻辑。
+
 **提交流程：**
 ```bash
 git checkout -b feature/xxx
@@ -125,11 +129,11 @@ git push origin feature/xxx
 | 指标 | 数值 |
 |------|------|
 | MoonBit 核心模块 | 9 |
-| MoonBit 代码 | ~3,580 行 |
-| Rust 代码 | ~1,073 行 |
+| MoonBit 代码 | ~3,600 行 |
+| Rust 代码 | ~1,800 行 |
 | 架构二重性消除 | 7 / 7 |
 | 五层调用链全部通电 | ✅ |
-| 测试覆盖 | MoonBit 6 测试 + Rust 14 用例 |
+| 测试覆盖 | MoonBit 6 测试 (js target) + Rust 10 (9 单元 + 1 文档) |
 | wasmtime WASI | ✅ 物理隔离已验证 |
 | 版本 | v0.9.2 |
 | 许可证 | Apache 2.0 |

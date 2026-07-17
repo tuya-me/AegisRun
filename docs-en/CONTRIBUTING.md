@@ -23,8 +23,10 @@ aegisrun/
 ├── runtime/                 Rust Library + CLI
 │   ├── src/lib.rs           Core (Policy + sandbox + scanner)
 │   ├── src/main.rs          CLI (aegisrun.exe)
-│   ├── src/sandbox.rs       wasmtime WASI sandbox
+│   ├── src/server_main.rs   Daemon entry (aegisrund)
 │   ├── src/server.rs        Web dashboard + MCP
+│   ├── src/sandbox.rs       wasmtime WASI sandbox
+│   ├── src/sandbox_monitor.rs  Runtime sandbox monitor
 │   ├── src/persist.rs       Audit + persistence
 │   └── src/verify.rs        Signature verification
 │
@@ -55,6 +57,8 @@ aegisrun/
 
 **MoonBit:** `moon build && moon check && moon fmt --check && moon test`
 
+> **Windows note:** `moon test` (wasm/wasm-gc targets) may fail on older Windows 10 builds due to WASM runtime DLL compatibility. Use `moon test --target js` as a workaround — it validates the same MoonBit logic.
+
 **Commit:** `git checkout -b feature/xxx` → write code → `git commit -m "feat: description"` → push → PR
 
 ## Code Style
@@ -69,9 +73,10 @@ aegisrun/
 
 | Metric | Value |
 |--------|-------|
-| MoonBit code | ~3,580 lines |
-| Rust code | ~1,073 lines |
+| MoonBit code | ~3,600 lines |
+| Rust code | ~1,800 lines |
 | Dualities eliminated | 7 / 7 |
 | Call chain | ✅ Fully powered |
+| Tests | MoonBit 6 (js target) + Rust 10 (9 unit + 1 doc) |
 | Version | v0.9.2 |
 | License | Apache 2.0 |

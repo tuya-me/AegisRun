@@ -5,12 +5,12 @@
 
 > 🇨🇳 [中文版 →](../README.md)
 
-[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260608-blue)](https://moonbitlang.com)
-[![Rust](https://img.shields.io/badge/Rust-wasmtime%2039-orange)](https://github.com/tuya-me/AegisRun/tree/clean-v2/runtime)
+[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260703-blue)](https://moonbitlang.com)
+[![Rust](https://img.shields.io/badge/Rust-wasmtime%2046-orange)](https://github.com/tuya-me/AegisRun/tree/clean-v2/runtime)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
-> MoonBit `>= 0.1.20260608` | Rust `>= 1.80` (runtime only) | wasmtime 39
+> MoonBit `>= 0.1.20260703` | Rust `>= 1.80` (runtime only) | wasmtime 46
 > **Install:** `moon add tuya-me/aegisrun` &nbsp;|&nbsp; **Branch:** `clean-v2`
 
 ---
@@ -19,8 +19,8 @@
 
 AI agents can leak API keys, upload sensitive files, or scan internal networks through third-party tools. AegisRun provides a **lightweight security execution layer** with five-level defense.
 
-- **MoonBit layer** (~3500 lines): Domain/IP blacklist, path interception, env var filtering, risk scoring, rate limiting, SQL guard
-- **Rust layer** (~1000 lines): wasmtime WASI physical sandbox, web dashboard, audit logging, tool signature verification
+- **MoonBit layer** (~3600 lines): Domain/IP blacklist, path interception, env var filtering, risk scoring, rate limiting, SQL guard
+- **Rust layer** (~1800 lines): wasmtime WASI physical sandbox, runtime sandbox monitor, web dashboard, audit logging, tool signature verification
 
 ## Architecture
 

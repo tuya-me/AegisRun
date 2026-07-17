@@ -135,12 +135,12 @@ Web 面板支持三种策略配置方式：
 
 > 🇬🇧 [English README →](docs-en/README.md)
 
-[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260608-blue)](https://moonbitlang.com)
-[![Rust](https://img.shields.io/badge/Rust-wasmtime%2039-orange)](https://github.com/tuya-me/AegisRun/tree/clean-v2/runtime)
+[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20260703-blue)](https://moonbitlang.com)
+[![Rust](https://img.shields.io/badge/Rust-wasmtime%2046-orange)](https://github.com/tuya-me/AegisRun/tree/clean-v2/runtime)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue)](https://opensource.org/licenses/Apache-2.0)
 [![OSC2026](https://img.shields.io/badge/OSC2026-AI%20Agent%20Track-orange)](https://moonbitlang.github.io/OSC2026/)
 
-> MoonBit `>= 0.1.20260608` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 39
+> MoonBit `>= 0.1.20260703` | Rust `>= 1.80`（仅 runtime 目录需要）| wasmtime 46
 > **安装：** `moon add tuya-me/aegisrun` &nbsp;|&nbsp; **分支：** `clean-v2`
 
 ---
@@ -149,8 +149,8 @@ Web 面板支持三种策略配置方式：
 
 AI Agent 在运行中被第三方工具窃取 API Key、上传敏感文件、扫描内网——这不是假设，是已经发生的事。AegisRun 提供一个**轻量安全执行层**，在工具和系统之间做五层纵深防御。
 
-- **MoonBit 层**（~3500 行）：域名/IP 黑名单、路径拦截、环境变量过滤、风险评分、限流熔断、SQL 防护
-- **Rust 层**（~1000 行）：wasmtime WASI 物理隔离沙箱、Web 面板、审计日志、工具签名验证
+- **MoonBit 层**（~3600 行）：域名/IP 黑名单、路径拦截、环境变量过滤、风险评分、限流熔断、SQL 防护
+- **Rust 层**（~1800 行）：wasmtime WASI 物理隔离沙箱、运行时沙箱监控、Web 面板、审计日志、工具签名验证
 
 ## 两层架构
 
@@ -225,6 +225,7 @@ docs-en/                          ← 英文文档（辅助版本）
 | `cargo run -- scan malware.py` | 扫描脚本找威胁 |
 | `cargo run -- sandbox tool.wasm` | WASI 物理隔离沙箱 |
 | `cargo run -- serve` | Web 面板（9090端口）|
+| `cargo run -- sandbox-monitor` | 运行时沙箱监控 |
 | `cargo run -- audit` | 审计日志 JSONL |
 | `cargo run -- verify tool.wasm id pub` | 工具签名验证 |
 
