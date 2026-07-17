@@ -76,6 +76,7 @@ use std::time::Duration;
 /// 异步审计日志：log() 不阻塞，后台线程攒批写入
 pub struct BufAuditLogger {
     sender: mpsc::Sender<AuditEntry>,
+    #[allow(dead_code)]
     handle: Option<std::thread::JoinHandle<()>>,
 }
 

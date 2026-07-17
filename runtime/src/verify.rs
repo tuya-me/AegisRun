@@ -33,6 +33,12 @@ pub struct ToolRegistry {
     persist_path: String,
 }
 
+impl Default for ToolRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[allow(dead_code)]
 impl ToolRegistry {
     pub fn new() -> Self {
