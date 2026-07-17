@@ -32,7 +32,8 @@ aegisrun/
 │
 ├── src/demo/                MoonBit 演示
 ├── src/generator/           恶意脚本生成
-├── dashboard.html           Web 管理面板
+├── web/                     Web 管理面板
+├── scripts/                 批处理脚本
 ├── docs-ch/                 中文文档
 ├── docs-en/                 英文文档
 └── presets/                 安全预设（YAML）
@@ -42,7 +43,7 @@ aegisrun/
 ```
 AI Agent → MCP → AegisRun Server → 策略引擎 → Allow/Deny
 开发者 → cargo add / moon add → src/lib 或 runtime/src/lib.rs
-管理员 → aegisrun.exe / dashboard.html → 策略配置
+管理员 → aegisrun.exe → 策略配置
 ```
 
 ## 可贡献方向

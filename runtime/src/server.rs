@@ -322,7 +322,7 @@ fn mcp(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &Arc<Mutex<Audit
 }
 
 fn dash() -> (&'static str, &'static str, String) {
-    ("200 OK", "text/html; charset=utf-8", include_str!("../../dashboard.html").to_string())
+    ("200 OK", "text/html; charset=utf-8", include_str!("../../web/dashboard.html").to_string())
 }
 
 fn http_body(req: &str) -> &str {

@@ -11,7 +11,7 @@
 
 ```cmd
 cd D:\moonbit\aegisrun
-quickstart.cmd
+scripts\quickstart.cmd
 ```
 
 Press `1` for interception, `3` for 7 security scenarios, `0` to exit.
@@ -19,7 +19,7 @@ Press `1` for interception, `3` for 7 security scenarios, `0` to exit.
 ### Quick Troubleshooting
 
 1. **Check MoonBit** — `moon version` → `0.1.20260608+`
-2. **Check directory** — `cd D:\moonbit\aegisrun` then `dir quickstart.cmd`
+2. **Check directory** — `cd D:\moonbit\aegisrun` then `dir scripts\quickstart.cmd`
 3. **Clear cache** — `rmdir /s /q target`
 
 ### Common Pitfalls
@@ -34,7 +34,7 @@ Press `1` for interception, `3` for 7 security scenarios, `0` to exit.
 
 | Command | Effect |
 |---------|--------|
-| `quickstart.cmd` | Interactive menu |
+| `scripts\quickstart.cmd` | Interactive menu |
 | `aegisrun.exe demo` | Policy demo (14 checks) |
 | `aegisrun.exe scan malware.py` | Scan script |
 | `aegisrun.exe serve` | Web admin panel |

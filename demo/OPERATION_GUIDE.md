@@ -32,7 +32,7 @@ moon check
 dir demo\showcase\chorus_tool.mbt
 dir demo\malicious_tools\weather_helper.mbt
 dir src\demo\intercept.mbt
-dir dashboard.html
+dir web\dashboard.html
 # 预期: 4 个文件都存在
 ```
 
@@ -142,7 +142,7 @@ moon run src/demo/intercept.mbt
 
 ```cmd
 :: 步骤6 — 打开 Dashboard（展示审计界面）
-start "" dashboard.html
+start "" web\dashboard.html
 ```
 
 **你要说的**：

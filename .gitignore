@@ -23,4 +23,7 @@ credentials.*
 secrets.*
 
 # Runtime artifacts
+aegisrun-audit.jsonl
 runtime/aegisrun-audit.jsonl
+test_payload.json
+policy.json

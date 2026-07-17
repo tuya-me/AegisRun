@@ -39,7 +39,7 @@ MoonBit Library (src/lib/)           Rust Runtime (runtime/)
 
 ```cmd
 cd D:\moonbit\aegisrun
-quickstart.cmd                    # Interactive menu
+scripts\quickstart.cmd              # Interactive menu
 moon run src/main                 # MoonBit CLI: demo
 cd runtime
 cargo run -- demo                 # Rust CLI: demo

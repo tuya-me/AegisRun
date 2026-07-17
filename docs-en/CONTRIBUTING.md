@@ -32,7 +32,8 @@ aegisrun/
 │
 ├── src/demo/                MoonBit demos
 ├── src/generator/           Malicious script generator
-├── dashboard.html           Web admin panel
+├── web/                     Web admin panel
+├── scripts/                 Batch scripts
 ├── docs-ch/                 Chinese docs
 ├── docs-en/                 English docs
 └── presets/                 Security presets (YAML)

@@ -11,7 +11,7 @@
 
 ```cmd
 cd D:\moonbit\aegisrun
-quickstart.cmd
+scripts\quickstart.cmd
 ```
 
 按 `1` 看拦截效果，按 `3` 看 7 个安全场景，按 `0` 退出。
@@ -19,7 +19,7 @@ quickstart.cmd
 ### 快速排障
 
 1. **确认 MoonBit 安装正确** — `moon version` 应显示 `0.1.20260608` 或更高。重装：`irm https://cli.moonbitlang.com/install/powershell.ps1 | iex`
-2. **确认在正确目录** — `cd D:\moonbit\aegisrun` 然后 `dir quickstart.cmd`
+2. **确认在正确目录** — `cd D:\moonbit\aegisrun` 然后 `dir scripts\quickstart.cmd`
 3. **清除编译缓存** — `rmdir /s /q target`
 
 ### 常见坑
@@ -37,7 +37,7 @@ quickstart.cmd
 
 | 命令 | 效果 |
 |------|------|
-| `quickstart.cmd` | 一键菜单 |
+| `scripts\quickstart.cmd` | 一键菜单 |
 | `aegisrun.exe demo` | 策略引擎演示（14项） |
 | `aegisrun.exe scan malware.py` | 扫描脚本找威胁 |
 | `aegisrun.exe serve` | 网页管理面板 |
@@ -79,7 +79,7 @@ aegisrun.exe serve
 src/lib/*.mbt          ← MoonBit 库（策略引擎，给别人 moon add 用的）
 runtime/src/lib.rs     ← Rust 库（策略引擎，给别人 cargo add 用的）
 runtime/src/main.rs    ← CLI 工具（aegisrun.exe）
-dashboard.html         ← 网页管理面板
+web/dashboard.html     ← 网页管理面板
 ```
 
 **库是产品，CLI 和网页是遥控器。**
@@ -299,8 +299,8 @@ D:\moonbit\aegisrun\
 │   ├── src/server.rs      面板 + MCP
 │   ├── src/sandbox.rs     wasmtime 沙箱
 │   └── src/persist.rs     审计 + 持久化
-├── dashboard.html         网页管理面板
-├── quickstart.cmd         一键菜单
+├── web/                   网页管理面板
+├── scripts/               批处理脚本
 ├── README.md              项目说明
 ├── docs-ch/               中文文档
 └── docs-en/               英文文档

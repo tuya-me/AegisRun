@@ -106,7 +106,7 @@ Wasm 沙箱层面就不会给它执行机会。"
 start "AegisRun MCP Server" moon run src/main/mcp_server.mbt
 
 :: 2. 打开 Dashboard
-start "" "dashboard.html"
+start "" "web\dashboard.html"
 
 :: 3. 展示 Claude Desktop 配置
 type "%APPDATA%\Claude\claude_desktop_config.json"
