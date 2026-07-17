@@ -1,4 +1,4 @@
-# AegisRun v0.9.2
+# AegisRun v0.9.3
 
 **AI Agent Secure Tool Execution Framework — MoonBit Policy Engine + Rust Sandbox Runtime**
 
@@ -20,7 +20,7 @@
 AI agents can leak API keys, upload sensitive files, or scan internal networks through third-party tools. AegisRun provides a **lightweight security execution layer** with five-level defense.
 
 - **MoonBit layer** (~3600 lines): Domain/IP blacklist, path interception, env var filtering, risk scoring, rate limiting, SQL guard
-- **Rust layer** (~1800 lines): wasmtime WASI physical sandbox, runtime sandbox monitor, web dashboard, audit logging, tool signature verification
+- **Rust layer** (~1800 lines): wasmtime WASI physical sandbox, runtime sandbox monitor, web dashboard, audit logging, ToolRegistry (tool discovery, registration, unregistration, tag search, keyword search, SHA256 signature verification, JSON persistence)
 
 ## Architecture
 
@@ -67,7 +67,7 @@ cargo run -- serve                # Web dashboard (port 9090)
 | `cargo run -- scan malware.py` | Scan script for threats |
 | `cargo run -- sandbox tool.wasm` | WASI physical isolation sandbox |
 | `cargo run -- serve` | Web dashboard (port 9090) |
-| `cargo run -- sandbox-monitor` | Runtime sandbox monitor |
+| `cargo run -- scan --code "..."` | Scan inline code |
 | `cargo run -- audit` | Audit log (JSONL) |
 | `cargo run -- verify tool.wasm id pub` | Tool signature verification |
 
@@ -88,7 +88,7 @@ Open `http://localhost:9090` in your browser. The panel is divided into three ma
 │  ├─ Domain: Blacklist/whitelist management                  │
 │  ├─ Path: Sensitive path interception                       │
 │  ├─ Env: Sensitive environment variable patterns            │
-│  ├─ Tools: Tool ID blocking                                 │
+│  ├─ Tools: Tool ID blocking + Tool Registry (register/search/tags/unregister) │
 │  └─ Audit: Real-time operation logs                         │
 ├─────────────────────────────────────────────────────────────┤
 │  Sandbox Detection Zone                                      │
@@ -97,7 +97,7 @@ Open `http://localhost:9090` in your browser. The panel is divided into three ma
 ├─────────────────────────────────────────────────────────────┤
 │  MCP Agent Zone                                              │
 │  ├─ MCP endpoint configuration                              │
-│  ├─ Available tools list (9 tools)                          │
+│  ├─ Available tools list (14 tools)                         │
 │  └─ Interactive tool caller                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -123,7 +123,7 @@ open("/etc/passwd")                      # L5 [path] /etc/passwd — BLOCKED
 
 **Policy Configuration** — Three methods: presets (Standard / Strict / Permissive), manual management, real-time sync.
 
-**API Endpoints:** `GET /api/policy` | `GET /api/stats` | `GET /api/audit` | `POST /api/scan` | `POST /api/sandbox-run` | `POST /mcp`
+**API Endpoints:** `GET /api/policy` | `GET /api/stats` | `GET /api/audit` | `POST /api/scan` | `POST /api/sandbox-run` | `GET /api/tools` | `GET /api/tools/search` | `GET /api/tools/tags` | `POST /api/tools/register` | `POST /api/tools/unregister` | `POST /mcp`
 
 ### Library Usage
 
@@ -145,7 +145,7 @@ policy.check_domain("evil.com");  // → false
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
 ```
 
-9 tools: policy.summary / policy.check_domain / policy.check_path / policy.check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm
+13 tools: policy.summary / policy.check_domain / policy.check_path / policy.check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm / tools.list / tools.search / tools.tags / tools.get
 
 ## License
 

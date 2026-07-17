@@ -1,8 +1,10 @@
 [package]
+autotests = false
 name = "aegisrun-runtime"
 version = "0.6.0"
 edition = "2021"
 description = "AegisRun - AI Agent Secure Tool Runtime (MoonBit + Rust)"
+default-run = "aegisrun"
 
 [dependencies]
 anyhow = "1"

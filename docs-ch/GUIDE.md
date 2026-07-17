@@ -189,6 +189,63 @@ aegisrun.exe sandbox tools\malware_tool\target\wasm32-wasip1\release\malware-too
 
 工具无法访问任何文件或环境变量 — WASI 零目录预打开 + 过滤环境变量。这不是策略 Deny，是 WASI 层的物理隔离。
 
+### 工具注册表（ToolRegistry）
+
+AegisRun 提供完整的工具生命周期管理，包括注册、发现、搜索、标签检索和卸载。
+
+**Web 面板操作：** 打开"工具管理"标签页，下方"工具注册表"区域可以查看已注册工具列表、按关键词搜索、点击标签快速过滤，以及注册/卸载工具。
+
+**MCP 工具调用：**
+
+```json
+// 列出所有已注册工具
+{ "name": "aegisrun.tools.list", "arguments": {} }
+
+// 按关键词搜索
+{ "name": "aegisrun.tools.search", "arguments": { "keyword": "weather" } }
+
+// 按标签检索
+{ "name": "aegisrun.tools.tags", "arguments": { "tags": ["net", "security"] } }
+```
+
+**REST API 调用：**
+
+```cmd
+# 列出所有工具
+curl http://localhost:9090/api/tools
+
+# 搜索工具
+curl http://localhost:9090/api/tools/search?keyword=weather
+
+# 获取所有标签
+curl http://localhost:9090/api/tools/tags
+
+# 注册工具
+curl -X POST http://localhost:9090/api/tools/register \
+  -H "Content-Type: application/json" \
+  -d '{"tool_id":"my-tool","publisher":"@aegisrun","version":"1.0.0","description":"A test tool","tags":["net"]}'
+
+# 卸载工具
+curl -X POST http://localhost:9090/api/tools/unregister/my-tool
+```
+
+**Rust 库调用：**
+
+```rust
+use aegisrun_runtime::verify::{ToolRegistry, ToolMeta};
+
+let mut reg = ToolRegistry::new();
+// 注册工具（自动计算 WASM 哈希）
+reg.register_from_wasm("my-tool", "tool.wasm", "@aegisrun",
+    "A test tool", "1.0.0", vec!["net".into()]).unwrap();
+// 搜索
+let results = reg.search("weather");
+// 标签检索
+let tagged = reg.search_by_tags(&["net".into()]);
+// 卸载
+reg.unregister("my-tool").unwrap();
+```
+
 ### Web 管理面板
 
 ```cmd
@@ -203,7 +260,7 @@ cargo run -- serve    # 然后打开 http://localhost:9090
 - **域名策略**：黑名单/白名单管理，支持后缀通配（`*.evil.com`）和 IP 前缀（`192.168.*`）
 - **路径策略**：敏感路径拦截，支持精确匹配和前缀目录
 - **环境变量**：敏感变量模式管理，内置 KEY/SECRET/TOKEN/PASSWORD/CREDENTIAL 关键词检测
-- **工具管理**：工具 ID 即时封杀
+- **工具管理**：工具 ID 即时封杀 + 工具注册表（注册、搜索、标签浏览、卸载）
 - **审计日志**：实时操作记录，支持清空
 
 **Sandbox 检测区**（安全检测功能）：
@@ -212,7 +269,7 @@ cargo run -- serve    # 然后打开 http://localhost:9090
 
 **MCP Agent 区**（Agent 集成功能）：
 - **MCP 端点配置**：显示 Claude Desktop / Codex 等客户端的 MCP 配置 JSON
-- **可用工具列表**：自动加载 9 个 MCP 工具（policy.summary / check_domain / check_path / check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm）
+- **可用工具列表**：自动加载 12 个 MCP 工具（policy.summary / check_domain / check_path / check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm / tools.list / tools.search / tools.tags）
 - **交互式调用面板**：选择工具 → 填写 JSON 参数 → 点击"调用" → 查看实时结果
 
 #### 中英文界面切换
@@ -254,6 +311,11 @@ open("/etc/passwd")
 | `/api/unblock/{type}/{value}` | POST | 移除黑名单 |
 | `/api/preset/{name}` | POST | 切换预设模板 |
 | `/api/clear-audit` | POST | 清空审计日志 |
+| `/api/tools` | GET | 获取已注册工具列表 |
+| `/api/tools/search?keyword=xxx` | GET | 按关键词搜索工具 |
+| `/api/tools/tags` | GET | 获取所有工具标签 |
+| `/api/tools/register` | POST | 注册新工具 |
+| `/api/tools/unregister/{id}` | POST | 卸载工具 |
 | `/mcp` | POST | MCP 协议端点 |
 ### MCP 集成
 
@@ -261,7 +323,7 @@ open("/etc/passwd")
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
 ```
 
-9 个工具：policy.summary / policy.check_domain / policy.check_path / policy.check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm
+12 个工具：policy.summary / policy.check_domain / policy.check_path / policy.check_env / guard_tool_call / scan_code / scan_file / sandbox_python / sandbox_wasm / tools.list / tools.search / tools.tags
 
 > **注意：** MCP 在 Rust 侧运行。MoonBit 编译为 Wasm，无 TCP 能力。
 > 启动方式：`cd runtime && cargo run -- serve`

@@ -92,10 +92,67 @@ aegisrun.exe sandbox tools/malware_tool/target/wasm32-wasip1/release/malware-too
 
 True physical isolation: zero preopens + filtered env. Not a policy Deny, WASI layer never grants capability.
 
+### Tool Registry (ToolRegistry)
+
+AegisRun provides full tool lifecycle management including registration, discovery, search, tag browsing, and unregistration.
+
+**Web Panel:** Open the "Tools" tab — the "Tool Registry" area at the bottom lets you view registered tools, search by keyword, click tags to filter, and register/unregister tools.
+
+**MCP Tool Calls:**
+
+```json
+// List all registered tools
+{ "name": "aegisrun.tools.list", "arguments": {} }
+
+// Search by keyword
+{ "name": "aegisrun.tools.search", "arguments": { "keyword": "weather" } }
+
+// Search by tags
+{ "name": "aegisrun.tools.tags", "arguments": { "tags": ["net", "security"] } }
+```
+
+**REST API Calls:**
+
+```cmd
+# List all tools
+curl http://localhost:9090/api/tools
+
+# Search tools by keyword
+curl http://localhost:9090/api/tools/search?keyword=weather
+
+# Get all tags
+curl http://localhost:9090/api/tools/tags
+
+# Register a tool
+curl -X POST http://localhost:9090/api/tools/register \
+  -H "Content-Type: application/json" \
+  -d '{"tool_id":"my-tool","publisher":"@aegisrun","version":"1.0.0","description":"A test tool","tags":["net"]}'
+
+# Unregister a tool
+curl -X POST http://localhost:9090/api/tools/unregister/my-tool
+```
+
+**Rust Library Usage:**
+
+```rust
+use aegisrun_runtime::verify::{ToolRegistry, ToolMeta};
+
+let mut reg = ToolRegistry::new();
+// Register a tool (automatically computes WASM hash)
+reg.register_from_wasm("my-tool", "tool.wasm", "@aegisrun",
+    "A test tool", "1.0.0", vec!["net".into()]).unwrap();
+// Search
+let results = reg.search("weather");
+// Tag search
+let tagged = reg.search_by_tags(&["net".into()]);
+// Unregister
+reg.unregister("my-tool").unwrap();
+```
+
 ### MCP Integration
 
 ```json
 { "mcpServers": { "aegisrun": { "url": "http://localhost:9090/mcp" } } }
 ```
 
-9 tools: `policy.summary`, `policy.check_domain`, `policy.check_path`, `policy.check_env`, `guard_tool_call`, `scan_code`, `scan_file`, `sandbox_python`, `sandbox_wasm`.
+12 tools: `policy.summary`, `policy.check_domain`, `policy.check_path`, `policy.check_env`, `guard_tool_call`, `scan_code`, `scan_file`, `sandbox_python`, `sandbox_wasm`, `tools.list`, `tools.search`, `tools.tags`.

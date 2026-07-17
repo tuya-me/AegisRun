@@ -9,7 +9,7 @@ pub enum MonitorLevel {
   Warning
   Degraded
   Critical
-} derive(Eq)
+} derive(Eq, Show)
 
 ///|
 pub struct MonitorConfig {
@@ -216,3 +216,4 @@ pub fn PressureMonitor::simulate_pressure(
   let pressure = if cpu > mem { cpu } else { mem }
   self.current_level = classify_pressure(pressure, self.config)
 }
+

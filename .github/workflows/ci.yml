@@ -41,6 +41,9 @@ jobs:
       - name: Check diagnostics
         run: moon check --target ${{ matrix.target }}
 
+      - name: Build
+        run: moon build --target ${{ matrix.target }}
+
       - name: Run tests
         run: moon test --target ${{ matrix.target }}
 
@@ -62,6 +65,9 @@ jobs:
 
       - name: Check diagnostics
         run: moon check
+
+      - name: Build
+        run: moon build
 
       - name: Run tests
         run: moon test

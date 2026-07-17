@@ -60,6 +60,85 @@ impl AuditLogger {
     }
 }
 
+impl Drop for AuditLogger {
+    fn drop(&mut self) {
+        if !self.buffer.is_empty() {
+            self.flush();
+        }
+    }
+}
+
+// ═══════ 异步审计日志（channel + 后台线程）═══
+
+use std::sync::mpsc;
+use std::time::Duration;
+
+/// 异步审计日志：log() 不阻塞，后台线程攒批写入
+pub struct BufAuditLogger {
+    sender: mpsc::Sender<AuditEntry>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+impl BufAuditLogger {
+    pub fn new(path: &str) -> Self {
+        let (tx, rx) = mpsc::channel::<AuditEntry>();
+        let path = path.to_string();
+        let handle = std::thread::spawn(move || {
+            let mut buffer: Vec<AuditEntry> = Vec::new();
+            let batch_size = 50;
+            loop {
+                match rx.recv_timeout(Duration::from_millis(500)) {
+                    Ok(entry) => {
+                        buffer.push(entry);
+                        if buffer.len() >= batch_size {
+                            flush_entries(&path, &buffer);
+                            buffer.clear();
+                        }
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {
+                        if !buffer.is_empty() {
+                            flush_entries(&path, &buffer);
+                            buffer.clear();
+                        }
+                    }
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        if !buffer.is_empty() {
+                            flush_entries(&path, &buffer);
+                        }
+                        break;
+                    }
+                }
+            }
+        });
+        Self { sender: tx, handle: Some(handle) }
+    }
+
+    /// 非阻塞写审计日志（直接发到 channel）
+    pub fn log(&self, tool_id: &str, action: &str, decision: &str, reason: &str) {
+        let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let entry = AuditEntry {
+            timestamp: format!("{}", ts),
+            tool_id: tool_id.to_string(),
+            action: action.to_string(),
+            decision: decision.to_string(),
+            reason: reason.to_string(),
+        };
+        let _ = self.sender.send(entry); // 忽略错误（后台线程已退出）
+    }
+}
+
+fn flush_entries(path: &str, entries: &[AuditEntry]) {
+    use std::io::Write;
+    let mut content = String::new();
+    for entry in entries {
+        content.push_str(&serde_json::to_string(entry).unwrap());
+        content.push('\n');
+    }
+    if let Ok(mut file) = std::fs::OpenOptions::new().append(true).create(true).open(path) {
+        let _ = file.write_all(content.as_bytes());
+    }
+}
+
 // ═══════ 策略持久化 ═══════
 
 use crate::Policy; // Policy defined in lib.rs

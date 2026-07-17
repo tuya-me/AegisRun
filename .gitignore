@@ -27,3 +27,12 @@ aegisrun-audit.jsonl
 runtime/aegisrun-audit.jsonl
 test_payload.json
 policy.json
+tool-registry.json
+runtime/tool-registry.json
+
+# Build/test output logs
+build_out.txt
+build_err.txt
+build.log
+test_out.txt
+test_err.txt

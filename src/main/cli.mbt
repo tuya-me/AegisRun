@@ -131,8 +131,8 @@ fn handle_command(args : Array[String], policy : @lib.PolicyState) -> Unit {
         "  └─────────────────────────────────────────────┘",
       )
       println("")
-      println("  手动打开: start dashboard.html")
-      println("  或浏览器: file:///D:/moonbit/aegisrun/dashboard.html")
+      println("  手动打开: start web/dashboard.html")
+      println("  或浏览器: http://localhost:9090")
       println("")
       println("  同步命令示例:")
       println("    set AEGISRUN_POLICY=domain_bl=evil.com|path_bl=/etc/passwd")

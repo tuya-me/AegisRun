@@ -1,6 +1,6 @@
 # AegisRun Architecture
 
-> v0.9.2 | MoonBit 0.1.20260608
+> v0.9.3 | MoonBit 0.1.20260608
 > 🇨🇳 [中文版 →](../docs-ch/ARCHITECTURE.md)
 
 ---
@@ -35,6 +35,43 @@ SandboxGrant { allowed_domains/paths/env_vars, max_timeout_ms, max_memory_kb, ma
 Sandbox { policy, grant, checked_count, blocked_count }
 Decision = Allow | Deny
 ```
+
+### ToolRegistry (Tool Registry)
+
+```
+ToolRegistry {
+  tools: HashMap<String, ToolMeta>     // tool_id → metadata
+  trusted_publishers: Vec<String>      // trusted publisher list
+  persist_path: String                 // JSON persistence path
+}
+
+ToolMeta {
+  tool_id: String                      // unique tool identifier
+  description: String                  // tool description
+  version: String                      // semantic version
+  publisher: String                    // publisher (e.g. @aegisrun)
+  sha256: String                       // WASM file SHA256 hash
+  tags: Vec<String>                    // tag list (e.g. ["net", "security"])
+  registered_at: String                // registration timestamp
+}
+```
+
+**Capabilities:**
+
+| Method | Description | Complexity |
+|--------|-------------|:----------:|
+| `register(meta)` | Register a tool (verifies publisher) | O(1) |
+| `register_from_wasm(...)` | Auto-compute hash from WASM file and register | O(n) n=file size |
+| `unregister(tool_id)` | Unregister a tool | O(1) |
+| `list_tools()` | List all tools (sorted by ID) | O(k log k) |
+| `get_tool(tool_id)` | Lookup by ID | O(1) |
+| `search(keyword)` | Keyword search (ID/description/tags/publisher) | O(k) |
+| `search_by_tags(tags)` | Tag search (any match) | O(k·t) |
+| `all_tags()` | Get all used tags | O(k·t) |
+| `verify_tool(path, id, pub)` | Full verification (publisher + hash + registration) | O(n) |
+| `save() / load()` | JSON persistence | O(k) |
+
+**Security Model:** Registration requires publisher trust check (default trusted: `@moonbit-official` and `@aegisrun`). `verify_tool()` performs triple verification: publisher trust → tool registered → WASM file hash match.
 
 ### Performance
 

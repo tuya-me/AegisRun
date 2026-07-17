@@ -352,7 +352,18 @@ pub struct ScanFinding {
     pub blocked: bool,
 }
 
+/// 读取文件并扫描，封装了 fs::read_to_string + scan_script 的常见组合
+/// 返回 (源码, 扫描结果) 二元组
+pub fn scan_file(path: &str) -> Result<(String, Vec<ScanFinding>), String> {
+    let source = std::fs::read_to_string(path)
+        .map_err(|e| format!("Cannot read file '{}': {}", path, e))?;
+    let findings = scan_script(&source);
+    Ok((source, findings))
+}
+
 pub mod sandbox_monitor;
+pub mod persist;
+pub mod verify;
 
 // ── 辅助 ──
 fn extract_strings(line: &str) -> Vec<String> {
@@ -438,97 +449,37 @@ fn wildcard_match(pattern: &str, value: &str) -> bool {
     true
 }
 
-// ═══════════════════════════════════════
-// Tests
-// ═══════════════════════════════════════
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_check_domain_blocks() {
-        let p = Policy::standard();
-        assert!(!p.check_domain("evil.com"));
-        assert!(!p.check_domain("stealer.cc"));
-        assert!(!p.check_domain("192.168.1.100"));
-        assert!(!p.check_domain("10.0.0.1"));
-        assert!(!p.check_domain("127.0.0.1"));
-        assert!(!p.check_domain("localhost"));
-        assert!(!p.check_domain("data-harvest.cn"));
-    }
-
-    #[test]
-    fn test_check_domain_allows() {
-        let p = Policy::standard();
-        assert!(p.check_domain("wttr.in"));
-        assert!(p.check_domain("api.github.com"));
-        assert!(p.check_domain("example.com"));
-    }
-
-    #[test]
-    fn test_check_path_blocks() {
-        let p = Policy::standard();
-        assert!(!p.check_path("/etc/passwd"));
-        assert!(!p.check_path("/etc/shadow"));
-        assert!(!p.check_path("~/.ssh/id_rsa"));
-        assert!(!p.check_path("~/.aws/credentials"));
-        assert!(!p.check_path("/home/user/project/.env"));
-        assert!(!p.check_path("C:\\Users\\alice\\AppData\\Roaming\\npm\\npmrc"));
-    }
-
-    #[test]
-    fn test_check_path_boundary() {
-        let p = Policy::standard();
-        // 包含 /etc/ 但不是被拦截的精确路径 → 应放行
-        assert!(p.check_path("/tmp/reports/etc_summary.txt"));
-        assert!(p.check_path("/home/user/docs"));
-    }
-
-    #[test]
-    fn test_check_env_blocks() {
-        let p = Policy::standard();
-        assert!(!p.check_env("OPENAI_API_KEY"));
-        assert!(!p.check_env("DATABASE_URL"));
-        assert!(!p.check_env("GITHUB_TOKEN"));
-        assert!(!p.check_env("ANTHROPIC_API_KEY"));
-    }
-
-    #[test]
-    fn test_check_env_allows() {
-        let p = Policy::standard();
-        assert!(p.check_env("USER"));
-        assert!(p.check_env("LANG"));
-        assert!(p.check_env("HOME"));
-    }
-
-    #[test]
-    fn test_runtime_network_guard() {
-        let p = Policy::standard();
-        assert!(sandbox_connect_domain(&p, "api.github.com").is_ok());
-        assert!(sandbox_connect_domain(&p, "evil.com").is_err());
-    }
-
-    #[test]
-    fn test_strict_preset() {
-        let p = Policy::strict();
-        // strict: all domains blocked
-        assert!(!p.check_domain("example.com"));
-        assert!(!p.check_domain("wttr.in"));
-        // strict: all paths blocked
-        assert!(!p.check_path("/tmp/test.txt"));
-        // strict: all env blocked
-        assert!(!p.check_env("USER"));
-    }
-
-    #[test]
-    fn test_permissive_preset() {
-        let p = Policy::permissive();
-        // permissive: still blocks local network
-        assert!(!p.check_domain("192.168.1.1"));
-        // permissive: allows external
-        assert!(p.check_domain("example.com"));
-        // permissive: still blocks critical paths
-        assert!(!p.check_path("/etc/passwd"));
-    }
-}
+#[path = "../tests/policy.rs"]
+mod tests_policy;
+#[cfg(test)]
+#[path = "../tests/scanner.rs"]
+mod tests_scanner;
+#[cfg(test)]
+#[path = "../tests/registry.rs"]
+mod tests_registry;
+#[cfg(test)]
+#[path = "../tests/audit.rs"]
+mod tests_audit;
+#[cfg(test)]
+#[path = "../tests/persist.rs"]
+mod tests_persist;
+#[cfg(test)]
+#[path = "../tests/sandbox_monitor.rs"]
+mod tests_sandbox_monitor;
+#[cfg(test)]
+#[path = "../tests/utils.rs"]
+mod tests_utils;
+#[cfg(test)]
+#[path = "../tests/demo_lifecycle.rs"]
+mod demo_lifecycle;
+#[cfg(test)]
+#[path = "../tests/wasi_sandbox.rs"]
+mod tests_wasi_sandbox;
+#[cfg(test)]
+#[path = "../tests/mcp.rs"]
+mod tests_mcp;
+#[cfg(test)]
+#[path = "../tests/hot_reload.rs"]
+mod tests_hot_reload;

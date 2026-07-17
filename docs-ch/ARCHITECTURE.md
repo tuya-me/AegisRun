@@ -299,6 +299,43 @@ Sandbox { policy, grant, checked_count, blocked_count }
 enum Decision { Allow, Deny }
 ```
 
+### ToolRegistry（工具注册表）
+
+```
+ToolRegistry {
+  tools: HashMap<String, ToolMeta>     // tool_id → 元数据
+  trusted_publishers: Vec<String>      // 可信发布者列表
+  persist_path: String                 // JSON 持久化路径
+}
+
+ToolMeta {
+  tool_id: String                      // 工具唯一标识
+  description: String                  // 工具描述
+  version: String                      // 语义化版本号
+  publisher: String                    // 发布者（如 @aegisrun）
+  sha256: String                       // WASM 文件 SHA256 哈希
+  tags: Vec<String>                    // 标签列表（如 ["net", "security"]）
+  registered_at: String                // 注册时间戳
+}
+```
+
+**核心能力：**
+
+| 方法 | 功能 | 复杂度 |
+|------|------|--------|
+| `register(meta)` | 注册工具（验证发布者） | O(1) |
+| `register_from_wasm(...)` | 从 WASM 文件自动计算哈希并注册 | O(n) n=文件大小 |
+| `unregister(tool_id)` | 卸载工具 | O(1) |
+| `list_tools()` | 列出所有工具（按 ID 排序） | O(k log k) |
+| `get_tool(tool_id)` | 按 ID 查询 | O(1) |
+| `search(keyword)` | 关键词搜索（ID/描述/标签/发布者） | O(k) |
+| `search_by_tags(tags)` | 标签检索（任一匹配） | O(k·t) |
+| `all_tags()` | 获取所有已使用标签 | O(k·t) |
+| `verify_tool(path, id, pub)` | 完整验证（发布者 + 哈希 + 注册） | O(n) |
+| `save() / load()` | JSON 持久化 | O(k) |
+
+**安全模型：** 注册时必须通过发布者信任检查（默认信任 `@moonbit-official` 和 `@aegisrun`）。`verify_tool()` 执行三重验证：发布者信任 → 工具已注册 → WASM 文件哈希匹配。
+
 ---
 
 ## 扩展指南

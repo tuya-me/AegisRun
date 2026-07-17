@@ -4,9 +4,9 @@ use std::net::TcpListener;
 use std::io::{Read, Write};
 use std::sync::{Arc, RwLock, Mutex};
 use socket2::{Socket, Domain, Type, Protocol};
-use aegisrun_runtime::{scan_script, sandbox_monitor};
-use super::Policy;
-use super::persist::{PolicyWatcher, AuditLogger};
+use aegisrun_runtime::{Policy, scan_script, sandbox_monitor};
+use aegisrun_runtime::persist::{PolicyWatcher, BufAuditLogger};
+use aegisrun_runtime::verify::{ToolRegistry, ToolMeta};
 
 pub struct DefenseState {
     pub layer1: bool, pub layer2: bool,
@@ -41,18 +41,24 @@ pub fn run(policy: Policy) {
     let mut watcher = PolicyWatcher::new("policy.json");
     let policy_arc = Arc::new(RwLock::new(policy));
     let defense = Arc::new(RwLock::new(DefenseState::all_on()));
-    let audit = Arc::new(Mutex::new(AuditLogger::new("aegisrun-audit.jsonl")));
+    let audit = Arc::new(aegisrun_runtime::persist::BufAuditLogger::new("aegisrun-audit.jsonl"));
+    let registry = Arc::new(RwLock::new(
+        ToolRegistry::load("tool-registry.json").unwrap_or_else(|_| ToolRegistry::with_path("tool-registry.json"))
+    ));
     println!("\n  AegisRun — http://localhost:{}  |  MCP: /mcp\n", port);
     for stream in listener.incoming().flatten() {
-        let _ = watcher.auto_reload();
+        if let Some(new_policy) = watcher.auto_reload() {
+            *policy_arc.write().unwrap() = new_policy;
+        }
         let p = policy_arc.clone();
         let d = defense.clone();
         let a = audit.clone();
-        std::thread::spawn(move || handle(stream, &p, &d, &a));
+        let reg = registry.clone();
+        std::thread::spawn(move || handle(stream, &p, &d, &a, &reg));
     }
 }
 
-fn handle(mut s: std::net::TcpStream, p: &Arc<RwLock<Policy>>, d: &Arc<RwLock<DefenseState>>, a: &Arc<Mutex<AuditLogger>>) {
+fn handle(mut s: std::net::TcpStream, p: &Arc<RwLock<Policy>>, d: &Arc<RwLock<DefenseState>>, a: &BufAuditLogger, reg: &Arc<RwLock<ToolRegistry>>) {
     let mut buf = [0u8; 8192];
     if s.read(&mut buf).is_err() { return; }
     let req = String::from_utf8_lossy(&buf);
@@ -62,14 +68,24 @@ fn handle(mut s: std::net::TcpStream, p: &Arc<RwLock<Policy>>, d: &Arc<RwLock<De
     let (method, path) = (parts[0], parts[1]);
     let (status, ct, body) = match (method, path) {
        ("OPTIONS", _) => ("204 No Content", "text/plain", String::new()),
-       ("POST", "/mcp") => mcp(&req, &p.read().unwrap(), d, a),
+       ("POST", "/mcp") => mcp(&req, &p.read().unwrap(), d, a, &reg.read().unwrap()),
        ("GET", "/api/policy") => pol(&p.read().unwrap()),
-       ("POST", "/api/scan") => scan_api(&req),
+       ("POST", "/api/scan") => scan_api(&req, a),
         ("POST", "/api/sandbox-run") => sandbox_run_api(&req, &p.read().unwrap(), d, a),
        ("GET", "/api/stats") => stats(),
+       ("GET", p) if p.starts_with("/api/audit?") => audit_query_api(path),
        ("GET", "/api/audit") => audit_api(),
         ("POST", "/api/clear-audit") => clear_audit(),
         ("GET", "/api/defense") => defs(d),
+        // Tool registry API
+        ("GET", "/api/tools") => tools_list_api(&reg.read().unwrap()),
+        ("GET", p) if p.starts_with("/api/tools/search") => tools_search_api(&reg.read().unwrap(), path),
+        ("GET", p) if p.starts_with("/api/tools/get/") => tools_get_api(&reg.read().unwrap(), path),
+        ("GET", "/api/tools/tags") => tools_tags_api(&reg.read().unwrap()),
+        ("POST", "/api/tools/register") => tools_register_api(&req, &mut reg.write().unwrap()),
+        ("POST", "/api/tools/unregister") => tools_unregister_api(&req, &mut reg.write().unwrap()),
+        ("POST", "/api/tools/batch-register") => tools_batch_register_api(&req, &mut reg.write().unwrap()),
+        ("POST", "/api/tools/scan-dir") => tools_scan_dir_api(&req),
         ("POST", _) if path.starts_with("/api/toggle/") => tog(d, path),
         ("POST", _) if path.starts_with("/api/block/") => block_api(&mut p.write().unwrap(), path),
         ("POST", _) if path.starts_with("/api/unblock/") => unblock_api(&mut p.write().unwrap(), path),
@@ -91,18 +107,55 @@ fn stats() -> (&'static str, &'static str, String) {
     let u = n.saturating_sub(START_TIME.load(std::sync::atomic::Ordering::Relaxed));
     ("200 OK", "application/json", serde_json::json!({"status":"active","uptime":format!("{}h {}m {}s",u/3600,u%3600/60,u%60)}).to_string())
 }
-fn scan_api(req: &str) -> (&'static str, &'static str, String) {
+fn scan_api(req: &str, a: &BufAuditLogger) -> (&'static str, &'static str, String) {
     let raw = req.split("\r\n\r\n").nth(1).unwrap_or("{}");
     let end = raw.rfind('}').map(|i| i+1).unwrap_or(raw.len());
     let body = &raw[..end];
     let v: serde_json::Value = match serde_json::from_str(body) { Ok(v) => v, Err(_) => return ("400","application/json",r#"{"error":"bad json"}"#.into()) };
-    let code = match v.get("code").and_then(|c| c.as_str()) { Some(s) => s.to_string(), None => return ("400","application/json",r#"{"error":"no code"}"#.into()) };
+    let (code, scanned_path) = {
+        let p = v.get("path").and_then(|c| c.as_str()).unwrap_or("");
+        let c = v.get("code").and_then(|c| c.as_str()).unwrap_or("");
+        if !p.is_empty() {
+            match std::fs::read_to_string(p) {
+                Ok(src) => (src, p.to_string()),
+                Err(e) => return ("400", "application/json", serde_json::json!({"error": format!("Cannot read file: {}", e)}).to_string()),
+            }
+        } else if !c.is_empty() {
+            (c.to_string(), String::new())
+        } else {
+            return ("400","application/json",r#"{"error":"no code or path"}"#.into())
+        }
+    };
     let findings = scan_script(&code);
     let blocked = findings.iter().filter(|f| f.blocked).count();
     let items: Vec<serde_json::Value> = findings.iter().map(|f| serde_json::json!({"line":f.line,"kind":f.kind,"value":f.value,"blocked":f.blocked})).collect();
-    ("200 OK", "application/json", serde_json::json!({"violations":blocked,"findings":items}).to_string())
+    if blocked > 0 {
+        let detail: String = findings.iter()
+            .filter(|f| f.blocked)
+            .map(|f| format!("{}({})", f.kind, f.value))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let reason = if !scanned_path.is_empty() {
+            format!("{} violations: {} in {}", blocked, detail, scanned_path)
+        } else {
+            format!("{} violations: {}", blocked, detail)
+        };
+        audit_decision(a, "web-sandbox", "scan", false, &reason);
+    } else {
+        let reason = if !scanned_path.is_empty() {
+            format!("clean in {}", scanned_path)
+        } else {
+            "clean".to_string()
+        };
+        audit_decision(a, "web-sandbox", "scan", true, &reason);
+    }
+    let mut resp = serde_json::json!({"violations":blocked,"findings":items});
+    if !scanned_path.is_empty() {
+        resp["path"] = serde_json::json!(scanned_path);
+    }
+    ("200 OK", "application/json", resp.to_string())
 }
-fn sandbox_run_api(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &Arc<Mutex<AuditLogger>>) -> (&'static str, &'static str, String) {
+fn sandbox_run_api(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &BufAuditLogger) -> (&'static str, &'static str, String) {
     let raw = req.split("\r\n\r\n").nth(1).unwrap_or("{}");
     let end = raw.rfind('}').map(|i| i+1).unwrap_or(raw.len());
     let body = &raw[..end];
@@ -110,9 +163,19 @@ fn sandbox_run_api(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &Arc
         Ok(v) => v,
         Err(_) => return ("400","application/json",r#"{"error":"bad json"}"#.into()),
     };
-    let code = match v.get("code").and_then(|c| c.as_str()) {
-        Some(s) => s.to_string(),
-        None => return ("400","application/json",r#"{"error":"no code"}"#.into()),
+    let (code, scanned_path) = {
+        let p = v.get("path").and_then(|c| c.as_str()).unwrap_or("");
+        let c = v.get("code").and_then(|c| c.as_str()).unwrap_or("");
+        if !p.is_empty() {
+            match std::fs::read_to_string(p) {
+                Ok(src) => (src, p.to_string()),
+                Err(e) => return ("400", "application/json", serde_json::json!({"error": format!("Cannot read file: {}", e)}).to_string()),
+            }
+        } else if !c.is_empty() {
+            (c.to_string(), String::new())
+        } else {
+            return ("400","application/json",r#"{"error":"no code or path"}"#.into())
+        }
     };
     let ds = d.read().unwrap();
     // Static scan
@@ -136,11 +199,26 @@ fn sandbox_run_api(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &Arc
     let items: Vec<serde_json::Value> = merged.iter().map(|f| serde_json::json!({"line":f.line,"kind":f.kind,"value":f.value,"blocked":f.blocked})).collect();
     // Audit log
     if blocked > 0 {
-        audit_decision(a, "web-sandbox", "sandbox-run", false, &format!("{} violations", blocked));
+        let detail: String = merged.iter()
+            .filter(|f| f.blocked)
+            .map(|f| format!("{}({})", f.kind, f.value))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let reason = if !scanned_path.is_empty() {
+            format!("{} violations: {} in {}", blocked, detail, scanned_path)
+        } else {
+            format!("{} violations: {}", blocked, detail)
+        };
+        audit_decision(a, "web-sandbox", "sandbox-run", false, &reason);
     } else {
-        audit_decision(a, "web-sandbox", "sandbox-run", true, "clean");
+        let reason = if !scanned_path.is_empty() {
+            format!("clean in {}", scanned_path)
+        } else {
+            "clean".to_string()
+        };
+        audit_decision(a, "web-sandbox", "sandbox-run", true, &reason);
     }
-    ("200 OK", "application/json", serde_json::json!({"violations":blocked,"static_findings":static_findings.len(),"runtime_findings":runtime_findings.len(),"findings":items}).to_string())
+    ("200 OK", "application/json", serde_json::json!({"violations":blocked,"static_findings":static_findings.len(),"runtime_findings":runtime_findings.len(),"findings":items,"path":scanned_path}).to_string())
 }
 fn audit_api() -> (&'static str, &'static str, String) {
     let c = std::fs::read_to_string("aegisrun-audit.jsonl").unwrap_or_default();
@@ -148,9 +226,227 @@ fn audit_api() -> (&'static str, &'static str, String) {
     v.reverse();
     ("200 OK", "application/json", serde_json::json!(v).to_string())
 }
+
+fn audit_query_api(path: &str) -> (&'static str, &'static str, String) {
+    let query = path.split('?').nth(1).unwrap_or("");
+    let params: std::collections::HashMap<&str, &str> = query.split('&')
+        .filter_map(|p| { let mut kv = p.splitn(2, '='); Some((kv.next()?, kv.next().unwrap_or(""))) })
+        .collect();
+    let c = std::fs::read_to_string("aegisrun-audit.jsonl").unwrap_or_default();
+    let mut v: Vec<serde_json::Value> = c.lines().filter_map(|l| serde_json::from_str(l).ok()).collect();
+    if let Some(tid) = params.get("tool_id") {
+        v.retain(|e| e.get("tool_id").and_then(|v| v.as_str()) == Some(tid));
+    }
+    if let Some(action) = params.get("action") {
+        v.retain(|e| e.get("action").and_then(|v| v.as_str()) == Some(action));
+    }
+    if let Some(dec) = params.get("decision") {
+        v.retain(|e| e.get("decision").and_then(|v| v.as_str()) == Some(dec));
+    }
+    v.reverse();
+    let total = v.len();
+    let denied = v.iter().filter(|e| e.get("decision").and_then(|v| v.as_str()) == Some("DENY")).count();
+    ("200 OK", "application/json", serde_json::json!({"entries":v,"total":total,"denied":denied}).to_string())
+}
 fn clear_audit() -> (&'static str, &'static str, String) {
     let _ = std::fs::write("aegisrun-audit.jsonl", "");
     ("200 OK", "application/json", r#"{"ok":true}"#.into())
+}
+
+// ═══════ Tool Registry API ═══════
+
+fn tools_list_api(reg: &ToolRegistry) -> (&'static str, &'static str, String) {
+    let tools = reg.list_tools();
+    let items: Vec<serde_json::Value> = tools.iter().map(|m| serde_json::json!({
+        "tool_id": m.tool_id, "description": m.description, "version": m.version,
+        "publisher": m.publisher, "sha256": m.sha256, "tags": m.tags, "registered_at": m.registered_at
+    })).collect();
+    ("200 OK", "application/json", serde_json::json!({"tools": items, "total": reg.tool_count()}).to_string())
+}
+
+fn tools_get_api(reg: &ToolRegistry, path: &str) -> (&'static str, &'static str, String) {
+    let tool_id = path.strip_prefix("/api/tools/get/").unwrap_or("");
+    if tool_id.is_empty() {
+        return ("400", "application/json", r#"{"error":"tool_id required"}"#.into());
+    }
+    match reg.get_tool(tool_id) {
+        Some(meta) => ("200 OK", "application/json", serde_json::json!({
+            "tool_id": meta.tool_id, "description": meta.description, "version": meta.version,
+            "publisher": meta.publisher, "sha256": meta.sha256, "tags": meta.tags, "registered_at": meta.registered_at
+        }).to_string()),
+        None => ("404", "application/json", serde_json::json!({"error": format!("Tool '{}' not found", tool_id)}).to_string()),
+    }
+}
+
+fn tools_search_api(reg: &ToolRegistry, path: &str) -> (&'static str, &'static str, String) {
+    let query = path.split('?').nth(1).unwrap_or("");
+    let params: std::collections::HashMap<&str, &str> = query.split('&')
+        .filter_map(|p| { let mut kv = p.splitn(2, '='); Some((kv.next()?, kv.next().unwrap_or(""))) })
+        .collect();
+    let tag_val = params.get("tag").or_else(|| params.get("tags"));
+    let q_val = params.get("q").or_else(|| params.get("keyword"));
+    let results = if let Some(tag) = tag_val {
+        reg.search_by_tags(&[tag.to_string()])
+    } else if let Some(q) = q_val {
+        reg.search(q)
+    } else {
+        reg.list_tools()
+    };
+    let items: Vec<serde_json::Value> = results.iter().map(|m| serde_json::json!({
+        "tool_id": m.tool_id, "description": m.description, "version": m.version,
+        "publisher": m.publisher, "tags": m.tags
+    })).collect();
+    ("200 OK", "application/json", serde_json::json!({"results": items, "count": items.len()}).to_string())
+}
+
+fn tools_tags_api(reg: &ToolRegistry) -> (&'static str, &'static str, String) {
+    let tags = reg.all_tags();
+    ("200 OK", "application/json", serde_json::json!({"tags": tags}).to_string())
+}
+
+fn tools_register_api(req: &str, reg: &mut ToolRegistry) -> (&'static str, &'static str, String) {
+    let raw = req.split("\r\n\r\n").nth(1).unwrap_or("{}");
+    let end = raw.rfind('}').map(|i| i+1).unwrap_or(raw.len());
+    let body = &raw[..end];
+    let v: serde_json::Value = match serde_json::from_str(body) {
+        Ok(v) => v,
+        Err(_) => return ("400", "application/json", r#"{"error":"bad json"}"#.into()),
+    };
+    let tool_id = v.get("tool_id").and_then(|s| s.as_str()).unwrap_or("");
+    let publisher = v.get("publisher").and_then(|s| s.as_str()).unwrap_or("@aegisrun");
+    let desc = v.get("description").and_then(|s| s.as_str()).unwrap_or("");
+    let version = v.get("version").and_then(|s| s.as_str()).unwrap_or("0.1.0");
+    let sha256 = v.get("sha256").and_then(|s| s.as_str()).unwrap_or("");
+    let tags: Vec<String> = v.get("tags").and_then(|t| t.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+    if tool_id.is_empty() {
+        return ("400", "application/json", r#"{"error":"tool_id required"}"#.into());
+    }
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default().as_secs();
+    let meta = ToolMeta {
+        tool_id: tool_id.to_string(),
+        description: desc.to_string(),
+        version: version.to_string(),
+        publisher: publisher.to_string(),
+        sha256: sha256.to_string(),
+        tags,
+        registered_at: format!("{}", ts),
+    };
+    match reg.register(meta) {
+        Ok(_) => ("200 OK", "application/json", serde_json::json!({"ok": true, "tool_id": tool_id}).to_string()),
+        Err(e) => ("400", "application/json", serde_json::json!({"error": e}).to_string()),
+    }
+}
+
+fn tools_unregister_api(req: &str, reg: &mut ToolRegistry) -> (&'static str, &'static str, String) {
+    let raw = req.split("\r\n\r\n").nth(1).unwrap_or("{}");
+    let end = raw.rfind('}').map(|i| i+1).unwrap_or(raw.len());
+    let body = &raw[..end];
+    let v: serde_json::Value = match serde_json::from_str(body) {
+        Ok(v) => v,
+        Err(_) => return ("400", "application/json", r#"{"error":"bad json"}"#.into()),
+    };
+    let tool_id = v.get("tool_id").and_then(|s| s.as_str()).unwrap_or("");
+    if tool_id.is_empty() {
+        return ("400", "application/json", r#"{"error":"tool_id required"}"#.into());
+    }
+    match reg.unregister(tool_id) {
+        Ok(meta) => ("200 OK", "application/json", serde_json::json!({"ok": true, "removed": meta.tool_id}).to_string()),
+        Err(e) => ("404", "application/json", serde_json::json!({"error": e}).to_string()),
+    }
+}
+
+/// Scan a directory for .wasm files and return their info
+fn tools_scan_dir_api(req: &str) -> (&'static str, &'static str, String) {
+    let raw = req.split("\r\n\r\n").nth(1).unwrap_or("{}");
+    let end = raw.rfind('}').map(|i| i+1).unwrap_or(raw.len());
+    let body = &raw[..end];
+    let v: serde_json::Value = match serde_json::from_str(body) {
+        Ok(v) => v,
+        Err(_) => return ("400", "application/json", r#"{"error":"bad json"}"#.into()),
+    };
+    let dir_path = v.get("path").and_then(|s| s.as_str()).unwrap_or("");
+    if dir_path.is_empty() {
+        return ("400", "application/json", r#"{"error":"path required"}"#.into());
+    }
+    let dir = std::path::Path::new(dir_path);
+    if !dir.is_dir() {
+        return ("400", "application/json", r#"{"error":"not a valid directory"}"#.into());
+    }
+    let mut wasm_files: Vec<serde_json::Value> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.extension().and_then(|e| e.to_str()) == Some("wasm") {
+                let name = p.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown");
+                let size = p.metadata().map(|m| m.len()).unwrap_or(0);
+                wasm_files.push(serde_json::json!({
+                    "path": p.to_string_lossy(),
+                    "name": name,
+                    "size": size,
+                    "size_human": format_size(size)
+                }));
+            }
+        }
+    }
+    ("200 OK", "application/json", serde_json::json!({"files": wasm_files, "count": wasm_files.len()}).to_string())
+}
+
+/// Batch register multiple tools at once
+fn tools_batch_register_api(req: &str, reg: &mut ToolRegistry) -> (&'static str, &'static str, String) {
+    let raw = req.split("\r\n\r\n").nth(1).unwrap_or("{}");
+    let end = raw.rfind('}').map(|i| i+1).unwrap_or(raw.len());
+    let body = &raw[..end];
+    let v: serde_json::Value = match serde_json::from_str(body) {
+        Ok(v) => v,
+        Err(_) => return ("400", "application/json", r#"{"error":"bad json"}"#.into()),
+    };
+    let tools = match v.get("tools").and_then(|t| t.as_array()) {
+        Some(arr) => arr,
+        None => return ("400", "application/json", r#"{"error":"tools array required"}"#.into()),
+    };
+    let mut results: Vec<serde_json::Value> = Vec::new();
+    for item in tools {
+        let tool_id = item.get("tool_id").and_then(|s| s.as_str()).unwrap_or("");
+        let publisher = item.get("publisher").and_then(|s| s.as_str()).unwrap_or("@aegisrun");
+        let version = item.get("version").and_then(|s| s.as_str()).unwrap_or("1.0.0");
+        let wasm_path = item.get("wasm_path").and_then(|s| s.as_str()).unwrap_or("");
+        let description = item.get("description").and_then(|s| s.as_str()).unwrap_or("");
+        let tags: Vec<String> = item.get("tags").and_then(|t| t.as_array())
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+            .unwrap_or_default();
+        if tool_id.is_empty() {
+            results.push(serde_json::json!({"tool_id": "", "ok": false, "error": "tool_id required"}));
+            continue;
+        }
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default().as_secs();
+        let meta = ToolMeta {
+            tool_id: tool_id.to_string(),
+            description: description.to_string(),
+            version: version.to_string(),
+            publisher: publisher.to_string(),
+            sha256: String::new(),
+            tags,
+            registered_at: format!("{}", ts),
+        };
+        match reg.register(meta) {
+            Ok(_) => results.push(serde_json::json!({"tool_id": tool_id, "ok": true})),
+            Err(e) => results.push(serde_json::json!({"tool_id": tool_id, "ok": false, "error": e})),
+        }
+    }
+    let ok_count = results.iter().filter(|r| r.get("ok").and_then(|v| v.as_bool()).unwrap_or(false)).count();
+    ("200 OK", "application/json", serde_json::json!({"results": results, "total": results.len(), "ok": ok_count}).to_string())
+}
+
+fn format_size(bytes: u64) -> String {
+    if bytes < 1024 { return format!("{} B", bytes); }
+    if bytes < 1024 * 1024 { return format!("{:.1} KB", bytes as f64 / 1024.0); }
+    format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
 }
 fn block_api(p: &mut Policy, path: &str) -> (&'static str, &'static str, String) {
     let v: Vec<&str> = path.split('/').collect();
@@ -188,7 +484,7 @@ fn tog(d: &Arc<RwLock<DefenseState>>, path: &str) -> (&'static str, &'static str
     ("200 OK","application/json",r#"{"ok":true}"#.into())
 }
 
-fn mcp(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &Arc<Mutex<AuditLogger>>) -> (&'static str, &'static str, String) {
+fn mcp(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &BufAuditLogger, reg: &ToolRegistry) -> (&'static str, &'static str, String) {
     let body = http_body(req);
     let v: serde_json::Value = match serde_json::from_str(body) {
         Ok(v) => v,
@@ -315,12 +611,46 @@ fn mcp(req: &str, p: &Policy, d: &Arc<RwLock<DefenseState>>, a: &Arc<Mutex<Audit
             };
             serde_json::json!({"wasm": wasm, "output": text})
         }
+        "aegisrun.tools.list" => {
+            let tools = reg.list_tools();
+            let items: Vec<serde_json::Value> = tools.iter().map(|m| serde_json::json!({
+                "tool_id": m.tool_id, "description": m.description, "version": m.version,
+                "publisher": m.publisher, "tags": m.tags
+            })).collect();
+            serde_json::json!({"tools": items, "total": reg.tool_count()})
+        }
+        "aegisrun.tools.search" => {
+            let keyword = arg_str(args, "keyword").or_else(|| arg_str(args, "q")).unwrap_or("");
+            let tag = arg_str(args, "tag");
+            let results = if let Some(tag) = tag {
+                reg.search_by_tags(&[tag.to_string()])
+            } else {
+                reg.search(keyword)
+            };
+            let items: Vec<serde_json::Value> = results.iter().map(|m| serde_json::json!({
+                "tool_id": m.tool_id, "description": m.description, "version": m.version,
+                "publisher": m.publisher, "tags": m.tags
+            })).collect();
+            serde_json::json!({"results": items, "count": items.len()})
+        }
+        "aegisrun.tools.tags" => {
+            serde_json::json!({"tags": reg.all_tags()})
+        }
+        "aegisrun.tools.get" => {
+            let tool_id = arg_str(args, "tool_id").unwrap_or("");
+            if tool_id.is_empty() {
+                return ("200 OK", "application/json", mcp_error(id, -32602, "tool_id required"));
+            }
+            match reg.get_tool(tool_id) {
+                Some(meta) => serde_json::json!({"tool_id": meta.tool_id, "description": meta.description, "version": meta.version, "publisher": meta.publisher, "tags": meta.tags, "registered_at": meta.registered_at}),
+                None => serde_json::json!({"error": format!("Tool '{}' not found", tool_id)}),
+            }
+        }
         _ => return ("200 OK", "application/json", mcp_error(id, -32602, "Unknown tool")),
     };
 
     ("200 OK", "application/json", mcp_json_text(&id, result))
 }
-
 fn dash() -> (&'static str, &'static str, String) {
     ("200 OK", "text/html; charset=utf-8", include_str!("../../web/dashboard.html").to_string())
 }
@@ -383,6 +713,26 @@ fn mcp_tools() -> serde_json::Value {
             "name": "aegisrun.sandbox_wasm",
             "description": "Run a WebAssembly tool in the wasmtime WASI sandbox.",
             "inputSchema": {"type": "object", "properties": {"wasm": {"type": "string"}}, "required": ["wasm"]}
+        },
+        {
+            "name": "aegisrun.tools.list",
+            "description": "List all registered tools with metadata.",
+            "inputSchema": {"type": "object", "properties": {}}
+        },
+        {
+            "name": "aegisrun.tools.search",
+            "description": "Search registered tools by keyword or tag.",
+            "inputSchema": {"type": "object", "properties": {"keyword": {"type": "string"}, "tag": {"type": "string"}}}
+        },
+        {
+            "name": "aegisrun.tools.tags",
+            "description": "List all tags used by registered tools.",
+            "inputSchema": {"type": "object", "properties": {}}
+        },
+        {
+            "name": "aegisrun.tools.get",
+            "description": "Get a single registered tool by tool_id.",
+            "inputSchema": {"type": "object", "properties": {"tool_id": {"type": "string"}}, "required": ["tool_id"]}
         }
     ])
 }
@@ -414,10 +764,8 @@ fn decision(ok: bool) -> &'static str {
     if ok { "ALLOW" } else { "DENY" }
 }
 
-fn audit_decision(a: &Arc<Mutex<AuditLogger>>, tool_id: &str, action: &str, ok: bool, reason: &str) {
-    let mut al = a.lock().unwrap();
-    al.log(tool_id, action, decision(ok), reason);
-    al.flush();
+fn audit_decision(a: &BufAuditLogger, tool_id: &str, action: &str, ok: bool, reason: &str) {
+    a.log(tool_id, action, decision(ok), reason);
 }
 
 fn findings_json(findings: &[aegisrun_runtime::ScanFinding]) -> serde_json::Value {
