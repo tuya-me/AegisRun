@@ -11,8 +11,8 @@ mod server;
 mod persist;
 mod verify;
 
-use persist::{AuditLogger, save_policy, load_policy};
-use verify::{ToolRegistry, ToolMeta};
+use persist::{save_policy, load_policy};
+use verify::ToolRegistry;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

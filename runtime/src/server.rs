@@ -2,7 +2,7 @@
 
 use std::net::TcpListener;
 use std::io::{Read, Write};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, RwLock};
 use socket2::{Socket, Domain, Type, Protocol};
 use aegisrun_runtime::{Policy, scan_script, sandbox_monitor};
 use aegisrun_runtime::persist::{PolicyWatcher, BufAuditLogger};
@@ -413,7 +413,7 @@ fn tools_batch_register_api(req: &str, reg: &mut ToolRegistry) -> (&'static str,
         let tool_id = item.get("tool_id").and_then(|s| s.as_str()).unwrap_or("");
         let publisher = item.get("publisher").and_then(|s| s.as_str()).unwrap_or("@aegisrun");
         let version = item.get("version").and_then(|s| s.as_str()).unwrap_or("1.0.0");
-        let wasm_path = item.get("wasm_path").and_then(|s| s.as_str()).unwrap_or("");
+        let _wasm_path = item.get("wasm_path").and_then(|s| s.as_str()).unwrap_or("");
         let description = item.get("description").and_then(|s| s.as_str()).unwrap_or("");
         let tags: Vec<String> = item.get("tags").and_then(|t| t.as_array())
             .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
