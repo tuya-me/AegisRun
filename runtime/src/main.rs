@@ -227,9 +227,9 @@ fn run_sandbox(wasm_path: &str) {
 }
 
 fn print_help() {
-    println!("");
+    println!();
     println!("{}", "AegisRun v0.6.0 — AI Agent Secure Tool Runtime");
-    println!("");
+    println!();
     println!("{}", "COMMANDS:");
     println!("  demo                          Run policy engine demo");
     println!("  scan <file> [--json]          Scan file for security threats");
@@ -247,19 +247,19 @@ fn print_help() {
     println!("  policy set <preset>           Switch preset");
     println!("  policy block <domain|path|env> <val>  Block an item");
     println!("  policy allow domain <val>     Whitelist a domain");
-    println!("");
+    println!();
     println!("{}", "EXAMPLES:");
     println!("  aegisrun scan test.py --json");
     println!("  aegisrun scan --code \"import os; os.environ['KEY']\"");
     println!("  aegisrun audit");
     println!("  aegisrun list-tools");
     println!("  aegisrun serve");
-    println!("");
+    println!();
     println!("{}", "LIBRARY:");
     println!("  Rust:    cargo add aegisrun-runtime");
     println!("           use aegisrun_runtime::{{Policy, scan_script, scan_file}}");
     println!("  MoonBit: moon add aegisrun");
     println!("           import @aegisrun/lib");
-    println!("");
+    println!();
 }
 
