@@ -6,13 +6,10 @@
 //!   MoonBit: moon add aegisrun → import @aegisrun/lib
 
 use aegisrun_runtime::{Policy, scan_script};
+use aegisrun_runtime::persist::{save_policy, load_policy};
+use aegisrun_runtime::verify::ToolRegistry;
 mod sandbox;
 mod server;
-mod persist;
-mod verify;
-
-use persist::{save_policy, load_policy};
-use verify::ToolRegistry;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
