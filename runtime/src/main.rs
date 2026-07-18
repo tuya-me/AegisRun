@@ -57,7 +57,7 @@ fn main() {
             };
             if json_output {
                 let items: Vec<serde_json::Value> = findings.iter().map(|f| serde_json::json!({"line":f.line,"kind":f.kind,"value":f.value,"blocked":f.blocked})).collect();
-                println!("{}", serde_json::json!({"source": src, "findings": items, "violations": findings.iter().filter(|f| f.blocked).count()}).to_string());
+                println!("{}", serde_json::json!({"source": src, "findings": items, "violations": findings.iter().filter(|f| f.blocked).count()}));
             } else {
                 run_scan_output(&source, &findings, if code_mode { "<inline>" } else { &source });
             }
@@ -149,7 +149,7 @@ fn main() {
         "policy" => {
             let sub = args.get(2).map(|s| s.as_str()).unwrap_or("show");
             match sub {
-                "show" => println!("{}", policy.show()),
+                "show" => println!("{}", policy.show()), // show() returns String
                 "set" => {
                     let preset = args.get(3).map(|s| s.as_str()).unwrap_or("standard");
                     policy = match preset { "strict" => Policy::strict(), "permissive" => Policy::permissive(), _ => Policy::standard() };
@@ -225,9 +225,9 @@ fn run_sandbox(wasm_path: &str) {
 
 fn print_help() {
     println!();
-    println!("{}", "AegisRun v0.6.0 — AI Agent Secure Tool Runtime");
+    println!("AegisRun v0.6.0 — AI Agent Secure Tool Runtime");
     println!();
-    println!("{}", "COMMANDS:");
+    println!("COMMANDS:");
     println!("  demo                          Run policy engine demo");
     println!("  scan <file> [--json]          Scan file for security threats");
     println!("  scan --code \"<code>\"         Scan inline code (--json for JSON)");
@@ -245,14 +245,14 @@ fn print_help() {
     println!("  policy block <domain|path|env> <val>  Block an item");
     println!("  policy allow domain <val>     Whitelist a domain");
     println!();
-    println!("{}", "EXAMPLES:");
+    println!("EXAMPLES:");
     println!("  aegisrun scan test.py --json");
     println!("  aegisrun scan --code \"import os; os.environ['KEY']\"");
     println!("  aegisrun audit");
     println!("  aegisrun list-tools");
     println!("  aegisrun serve");
     println!();
-    println!("{}", "LIBRARY:");
+    println!("LIBRARY:");
     println!("  Rust:    cargo add aegisrun-runtime");
     println!("           use aegisrun_runtime::{{Policy, scan_script, scan_file}}");
     println!("  MoonBit: moon add aegisrun");
